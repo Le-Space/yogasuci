@@ -86,6 +86,13 @@ This is not a shortcoming of the method but more honest than a smooth import:
 - **Retreats, teacher trainings, online-only offerings.** They do not belong in a
   timetable with attendance.
 
+### Websites almost never publish the number of places
+
+A timetable says "Mon 18:00 Hatha", not "20 places". Courses without one get a
+suggested number and are marked **assumed** on the review screen — that number is
+your decision anyway, not a fact from the page. Change it there before you take
+the programme over.
+
 If one pass has several prices at your studio — reduced, students, with a
 membership — it becomes several passes with the tier in the name. A pass carries
 exactly one price.

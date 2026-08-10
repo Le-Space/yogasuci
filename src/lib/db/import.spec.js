@@ -10,7 +10,14 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { parseSetupText, planImport, readPrice, SETUP_FORMAT, slugify } from './import.js';
+import {
+	DEFAULT_CAPACITY,
+	parseSetupText,
+	planImport,
+	readPrice,
+	SETUP_FORMAT,
+	slugify
+} from './import.js';
 
 /** As an assistant would return it, reading the Sivananda price list. */
 const SIVANANDA = {
@@ -113,6 +120,63 @@ describe('planImport with the Sivananda price list', () => {
 
 	it('records where the document came from', () => {
 		expect(planImport(SIVANANDA).source).toBe('https://muenchen.sivananda.yoga/preise/');
+	});
+});
+
+describe('the places a website never publishes', () => {
+	/** A timetable line as it appears on a real site: day, time, title. No room size. */
+	const TIMETABLE_COURSE = {
+		format: SETUP_FORMAT,
+		courses: [
+			{
+				mode: 'recurring',
+				locationId: 'luisenstrasse',
+				title: 'Hatha Yoga',
+				weekday: 1,
+				time: '18:00'
+			}
+		]
+	};
+
+	it('keeps a course that gives no number of places', () => {
+		// This is the whole point of the change. A studio site says "Mon 18:00
+		// Hatha", never "20 places", and the prompt forbids inventing what the page
+		// does not say — so requiring it meant refusing nearly every course while
+		// the prices sailed through. Backwards: the price is a fact from the page,
+		// the capacity is a decision the studio makes anyway.
+		const plan = planImport(TIMETABLE_COURSE);
+
+		expect(plan.courses).toHaveLength(1);
+		expect(plan.refused).toEqual([]);
+	});
+
+	it('marks the number as assumed rather than presenting it as read', () => {
+		const [course] = planImport(TIMETABLE_COURSE).courses;
+
+		expect(course.capacity).toBe(DEFAULT_CAPACITY);
+		expect(course.capacityAssumed).toBe(true);
+	});
+
+	it('does not mark a number the page actually gave', () => {
+		const plan = planImport({
+			format: SETUP_FORMAT,
+			courses: [{ ...TIMETABLE_COURSE.courses[0], capacity: 20 }]
+		});
+
+		expect(plan.courses[0].capacity).toBe(20);
+		expect(plan.courses[0].capacityAssumed).toBe(false);
+	});
+
+	it('falls back rather than losing a course over an unreadable number', () => {
+		// "max. 20 Teilnehmer" that came back as a phrase. Dropping the course
+		// costs more than assuming a number the studio can see and correct.
+		const plan = planImport({
+			format: SETUP_FORMAT,
+			courses: [{ ...TIMETABLE_COURSE.courses[0], capacity: 'viele' }]
+		});
+
+		expect(plan.courses).toHaveLength(1);
+		expect(plan.courses[0].capacityAssumed).toBe(true);
 	});
 });
 

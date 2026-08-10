@@ -104,6 +104,8 @@
 	"guest_readonly": "Du siehst dieses Studio als Gast. Änderungen kann nur das Studio selbst vornehmen.",
 	"import_applied": "{count} Einträge angelegt.",
 	"import_apply": "Ausgewähltes übernehmen",
+	"import_capacity_assumed": "geschätzt — bitte prüfen",
+	"import_capacity_label": "Plätze",
 	"import_check_prices": "Preise bitte gegen eure Preisliste prüfen — eine KI verliest sich hier am ehesten.",
 	"import_copy_prompt": "Prompt kopieren",
 	"import_days_label": "Gültig (Tage)",
