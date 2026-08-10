@@ -198,6 +198,29 @@ export async function savePackage({
 }
 
 /**
+ * Retire a pass so it can no longer be sold.
+ *
+ * Deactivated rather than deleted, for the same reason as a course and one more:
+ * every ticket ever sold names its `packageId`, and the cash report reads the
+ * price and the name off the *sale*, not off the price list. Removing the
+ * document would leave those sales pointing at nothing.
+ *
+ * This is also what makes a mistaken import recoverable. Correcting a price
+ * means editing it; a pass that should never have existed is retired here, and
+ * the sales it never made stay absent from the report.
+ *
+ * @param {string} packageId full `_id`
+ */
+export async function deactivatePackage(packageId) {
+	const db = requireProgramDb();
+	const existing = await db.get(packageId);
+	if (!existing) throw new Error(`No package ${packageId}`);
+
+	await db.put({ ...existing.value, active: false });
+	await refreshProgram();
+}
+
+/**
  * Deactivate rather than delete — sold tickets reference the course, and a
  * dangling `courseId` would make a series ticket unredeemable.
  *

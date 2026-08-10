@@ -74,6 +74,19 @@ cash report.
 Only **Create the selected entries** writes anything. Whatever you untick stays
 out.
 
+### When an import went wrong
+
+An import cannot be undone, only corrected. Price, visits and validity you change
+in the editor above. A pass that should never have existed you retire with **Stop
+selling**: it disappears from the till and stays in the list.
+
+Staying in the list is deliberate. Every pass sold carries the name and price it
+was sold under — the cash report reads both off the sale, not off your price
+list. Deleting the pass would leave old sales pointing at nothing.
+
+Importing again is harmless: entries with the same id appear on the review screen
+as **already exists** and are not created twice.
+
 ### What regularly does not come through
 
 This is not a shortcoming of the method but more honest than a smooth import:

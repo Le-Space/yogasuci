@@ -327,4 +327,33 @@ test.describe('taking a programme over from a pasted document', () => {
 		await expect(alice.getByTestId('studio-ready')).toBeVisible(READY);
 		await expect(alice.getByTestId('package-item')).toHaveCount(1, READY);
 	});
+
+	test('a pass can be retired without being deleted', async ({ alice }) => {
+		// The recovery path for an import that went wrong. A pass cannot be
+		// deleted: every ticket ever sold names its packageId, and the cash report
+		// reads price and name off the sale rather than off the price list. So it
+		// is retired, and the price list keeps it as a record.
+		//
+		// That the till stops offering it is asserted in m4-tickets, where a
+		// student is already connected — the counter form only renders once there
+		// is somebody to sell to.
+		test.setTimeout(240_000);
+
+		await onboard(alice);
+		await alice.getByTestId('studio-name').fill('Yoga Eggenfelden');
+		await alice.getByTestId('studio-save').click();
+		await alice.getByTestId('nav-program').click();
+
+		await addPackage(alice, { id: 'falsch', de: 'Versehentlich', kind: 'ten', units: '10' });
+		await expect(alice.getByTestId('package-item')).toHaveCount(1);
+
+		const wrong = alice.locator('[data-package-id="package:falsch"]');
+		await expect(wrong).toHaveAttribute('data-active', 'true');
+
+		await wrong.getByTestId('package-deactivate').click();
+
+		await expect(wrong).toHaveAttribute('data-active', 'false');
+		await expect(alice.getByTestId('package-item')).toHaveCount(1);
+		await expect(wrong.getByTestId('package-deactivate')).toHaveCount(0);
+	});
 });
