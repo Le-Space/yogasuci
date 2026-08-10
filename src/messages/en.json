@@ -104,6 +104,8 @@
 	"guest_readonly": "You are viewing this studio as a guest. Only the studio itself can make changes.",
 	"import_applied": "{count} entries created.",
 	"import_apply": "Create the selected entries",
+	"import_capacity_assumed": "assumed — please check",
+	"import_capacity_label": "Places",
 	"import_check_prices": "Please check the prices against your own price list — this is where an assistant most often misreads.",
 	"import_copy_prompt": "Copy the prompt",
 	"import_days_label": "Valid (days)",

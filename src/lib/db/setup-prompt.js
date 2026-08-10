@@ -64,6 +64,7 @@ const RULES = {
 		`Kannst du nicht entscheiden, ob etwas eine Karte ist — etwa „Workshop: 22 € oder 1 Streifen" — dann lass es weg.`,
 		`\`kind\` ist eines von: ${PACKAGE_KINDS.join(', ')}. \`validityStart\` ist ${VALIDITY_STARTS.join(' oder ')}.`,
 		`\`weekday\`: 0 = Sonntag bis 6 = Samstag. \`time\` als \`"HH:MM"\`. \`locationId\` ist der Name des Standorts in Kleinbuchstaben mit Bindestrichen.`,
+		`\`capacity\` (Plätze) nur, wenn die Seite es nennt. Steht es nirgends, lass das Feld weg — das Studio trägt die Zahl selbst nach.`,
 		`Lehrernamen, Retreats, Ausbildungen und Online-Angebote gehören **nicht** hinein.`
 	],
 	en: [
@@ -76,6 +77,7 @@ const RULES = {
 		`If you cannot decide whether something is a pass — such as "Workshop: €22 or one strip off a card" — leave it out.`,
 		`\`kind\` is one of: ${PACKAGE_KINDS.join(', ')}. \`validityStart\` is ${VALIDITY_STARTS.join(' or ')}.`,
 		`\`weekday\`: 0 = Sunday through 6 = Saturday. \`time\` as \`"HH:MM"\`. \`locationId\` is the location name in lowercase with hyphens.`,
+		`\`capacity\` (places) only where the page states it. If it does not, leave the field out — the studio fills that number in itself.`,
 		`Teacher names, retreats, teacher trainings and online-only offerings do **not** belong in it.`
 	]
 };

@@ -26,6 +26,21 @@ export const SETUP_FORMAT = 'yogasuci/setup/1';
 /** Validity windows the ledger understands (see src/lib/ledger/types.ts). */
 export const VALIDITY_STARTS = ['issue', 'firstRedeem'];
 
+/**
+ * Places per course when the document does not say.
+ *
+ * A studio website publishes its timetable, not its room size — "Mo 18:00
+ * Hatha", never "20 places". Refusing a course for a number that is nowhere on
+ * the page meant the import dropped almost every course while passing the
+ * prices, which is backwards: the prices are facts from the page, the capacity
+ * is a decision the studio makes anyway.
+ *
+ * Twelve because that is what the programme editor already starts a new course
+ * with. Marked as assumed so the review screen can say so rather than present
+ * it as read.
+ */
+export const DEFAULT_CAPACITY = 12;
+
 /** Package kinds the programme editor offers. */
 export const PACKAGE_KINDS = ['single', 'day', 'week', 'ten', 'month', 'year'];
 
@@ -298,11 +313,12 @@ export function planImport(document, current = {}) {
 			continue;
 		}
 
-		const capacity = readPositiveInt(entry.capacity);
-		if (capacity === null) {
-			plan.refused.push({ what: title.de, reason: 'it gives no usable number of places' });
-			continue;
-		}
+		// Not a reason to refuse: see DEFAULT_CAPACITY. A course whose places we
+		// had to assume is still a course, and the number is editable before
+		// anything is written.
+		const readCapacity = readPositiveInt(entry.capacity);
+		const capacity = readCapacity ?? DEFAULT_CAPACITY;
+		const capacityAssumed = readCapacity === null;
 
 		const durationMin = readPositiveInt(entry.durationMin) ?? 90;
 		const time =
@@ -349,6 +365,7 @@ export function planImport(document, current = {}) {
 				time,
 				durationMin,
 				capacity,
+				capacityAssumed,
 				sessions,
 				priceEUR,
 				allowDropIn: entry.allowDropIn !== false
@@ -371,6 +388,7 @@ export function planImport(document, current = {}) {
 			time,
 			durationMin,
 			capacity,
+			capacityAssumed,
 			validFrom: typeof entry.validFrom === 'string' ? entry.validFrom : null,
 			validUntil: typeof entry.validUntil === 'string' ? entry.validUntil : null
 		});

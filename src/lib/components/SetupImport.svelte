@@ -259,6 +259,27 @@
 							<span class="font-medium">{entry.title.de}</span>
 							<span class="text-faint">{entry.time}</span>
 						</label>
+
+						<div class="mt-2 flex flex-wrap items-end gap-3">
+							<label class="grid gap-1 text-xs text-muted">
+								{m.import_capacity_label()}
+								<input
+									type="number"
+									min="1"
+									data-testid="import-capacity"
+									bind:value={entry.capacity}
+									class="w-20 rounded-control border p-1"
+								/>
+							</label>
+							{#if entry.capacityAssumed}
+								<!-- A website publishes its timetable, not its room size. Saying
+								     so beats presenting a number nobody read as if it came from
+								     the page. -->
+								<span class="pb-1 text-xs text-warning" data-testid="import-capacity-assumed">
+									{m.import_capacity_assumed()}
+								</span>
+							{/if}
+						</div>
 					</li>
 				{/each}
 			</ul>

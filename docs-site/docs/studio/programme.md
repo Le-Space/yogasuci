@@ -88,6 +88,13 @@ Das ist kein Fehler des Verfahrens, sondern ehrlicher als ein glatter Import:
 - **Retreats, Ausbildungen, reine Online-Angebote.** Die gehören nicht in einen
   Stundenplan mit Anwesenheit.
 
+### Plätze stehen fast nie auf einer Website
+
+Ein Stundenplan sagt „Mo 18:00 Hatha", nicht „20 Plätze". Kurse ohne Angabe
+bekommen deshalb einen Vorschlagswert und sind im Prüfschirm als **geschätzt**
+markiert — die Zahl ist ohnehin eure Entscheidung und kein Fakt von der Seite.
+Ändert sie dort, bevor ihr übernehmt.
+
 Hat eine Karte bei euch mehrere Preise — ermäßigt, für Studierende, mit
 Förderbeitrag — werden daraus mehrere Karten mit der Stufe im Namen. Eine Karte
 trägt genau einen Preis.
