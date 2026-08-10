@@ -49,6 +49,25 @@ test.describe('cash purchase', () => {
 		// "Stand vom …" is part of the balance, not decoration: without a server
 		// there is no other honest way to say how current a number is.
 		await expect(card.getByTestId('ticket-as-of')).not.toHaveText('—');
+
+		// --- Retiring the pass stops the counter offering it -------------------
+		// Asserted here rather than in m1 because the till only renders its form
+		// once there is a student to sell to, and this test already has one.
+		//
+		// The sale above is untouched by it: a ticket carries the price and the
+		// name it was sold under, so retiring the pass cannot rewrite what Bob
+		// already paid.
+		await alice.getByTestId('nav-program').click();
+		await alice
+			.locator('[data-package-id="package:zehner"]')
+			.getByTestId('package-deactivate')
+			.click();
+
+		await alice.getByTestId('nav-till').click();
+		await expect(alice.getByTestId('till-student')).toBeVisible(REPLICATED);
+		await expect(alice.getByTestId('till-package').locator('option')).toHaveCount(1);
+
+		await expect(card.getByTestId('ticket-balance')).toHaveText('10');
 	});
 
 	// Not tested here on purpose: "an event from an unregistered device is

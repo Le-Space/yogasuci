@@ -90,6 +90,11 @@
 			const pkg = $packagesStore.find((entry) => entry._id === packageId);
 			if (!student || !pkg) throw new Error('Pick a student and a pass.');
 
+			// Checked here too, not only in the list: a second device may have
+			// retired the pass while this one had it selected, and replication
+			// arrives without asking whether a form is open.
+			if (pkg.active === false) throw new Error('That pass is no longer sold.');
+
 			const own = $ownDidStore ?? '';
 			const device = $devicesStore.find((entry) => entry.deviceDid === own);
 
@@ -158,7 +163,10 @@
 							class="rounded-control border p-2"
 						>
 							<option value="" disabled></option>
-							{#each $packagesStore as pkg (pkg._id)}
+							<!-- Retired passes drop out of the list. `!== false` rather than
+							     `=== true`: passes created before the field existed have no
+							     `active` at all, and they are still on sale. -->
+							{#each $packagesStore.filter((pkg) => pkg.active !== false) as pkg (pkg._id)}
 								<option value={pkg._id}>
 									{localized(pkg.name, getLocale())} · {pkg.priceEUR} EUR
 								</option>

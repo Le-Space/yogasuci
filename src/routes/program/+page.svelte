@@ -15,6 +15,7 @@
 		courseWindow,
 		occupancyStore,
 		deactivateCourse,
+		deactivatePackage,
 		localized,
 		packagesStore,
 		savePackage,
@@ -558,13 +559,28 @@
 					class="flex items-baseline gap-3 border-b border-border pb-2"
 					data-testid="package-item"
 					data-package-id={entry._id}
+					data-active={entry.active !== false}
 				>
 					<span class="flex-1">
 						{localized(entry.name, getLocale())}
 						<span class="text-faint">
 							· {entry.priceEUR} EUR · {entry.units === null ? m.ticket_unlimited() : entry.units}
 						</span>
+						{#if entry.active === false}
+							<span class="text-warning">· {m.package_inactive()}</span>
+						{/if}
 					</span>
+
+					{#if entry.active !== false && canEdit}
+						<button
+							type="button"
+							data-testid="package-deactivate"
+							onclick={() => run(() => deactivatePackage(entry._id))}
+							class="rounded-control border border-border px-2 py-1 text-sm"
+						>
+							{m.package_deactivate()}
+						</button>
+					{/if}
 				</li>
 			{:else}
 				<li class="text-faint" data-testid="package-empty">{m.package_none()}</li>

@@ -76,6 +76,21 @@ Später fällt es erst im Kassenbericht auf.
 
 Erst **Ausgewähltes übernehmen** schreibt. Was ihr abhakt, bleibt draußen.
 
+### Wenn ein Import danebenging
+
+Ein Import lässt sich nicht rückgängig machen, nur korrigieren. Preis, Einheiten
+und Gültigkeit ändert ihr oben im Editor. Eine Karte, die es gar nicht geben
+sollte, stellt ihr über **Nicht mehr verkaufen** still: Sie verschwindet aus der
+Kasse und bleibt in der Liste stehen.
+
+Dass sie stehenbleibt, ist Absicht. Jede verkaufte Karte trägt den Namen und den
+Preis, zu dem sie verkauft wurde — der Kassenbericht liest beides vom Verkauf,
+nicht aus eurer Preisliste. Eine gelöschte Karte ließe alte Verkäufe ins Leere
+zeigen.
+
+Erneut zu importieren ist unbedenklich: Einträge mit derselben Kennung erscheinen
+im Prüfschirm als **„Gibt es schon"** und werden nicht doppelt angelegt.
+
 ### Was regelmäßig nicht durchkommt
 
 Das ist kein Fehler des Verfahrens, sondern ehrlicher als ein glatter Import:
