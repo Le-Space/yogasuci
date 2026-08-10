@@ -66,6 +66,80 @@
 	/** @type {any} */
 	let scanner = $state(null);
 	let status = $state();
+	let elementsReady = $state(false);
+
+	/**
+	 * Apply everything that has to be set *on* an element, once there is one.
+	 *
+	 * Both conditions matter and neither is enough alone. Before the module is
+	 * imported the tags are unknown elements, and assigning `strings` to one
+	 * writes an own property that shadows the setter for good once it upgrades -
+	 * silently, with the defaults still on screen. Before StudioGate opens the
+	 * elements are not in the document at all.
+	 *
+	 * This used to run in the import callback, which met the first condition and
+	 * missed the second: the labels stayed English *and* `probe()` never ran, so
+	 * the readiness panel showed rows that had never been measured.
+	 */
+	$effect(() => {
+		if (!elementsReady || !status) return;
+
+		translateElements();
+
+		// The same servers the handshake will use, so the reading is about this
+		// configuration rather than about a default somebody else picked.
+		status.rtcConfiguration = rtcConfiguration();
+		status.probe().catch(() => {});
+	});
+
+	/**
+	 * Hand the elements this app's language.
+	 *
+	 * They ship English defaults, which is fine for the package's own demo and
+	 * wrong inside a German screen. `strings` merges over those defaults, so a
+	 * line added upstream later keeps its English rather than going blank here.
+	 *
+	 * Assigned once rather than in an effect: paraglide's `setLocale` reloads the
+	 * page (runtime.js calls `window.location.reload()`), so there is no locale
+	 * change to react to within one page life. If that ever stops being true,
+	 * this needs to become an effect and the tests below will not notice - so it
+	 * is written down rather than left to be rediscovered.
+	 *
+	 * `label` stays an attribute: it is the dialog title, it is already there and
+	 * tested, and one string with two sources is how the two drift apart.
+	 */
+	function translateElements() {
+		if (status) {
+			status.strings = {
+				browser: m.qr_status_browser(),
+				ipv4: m.qr_status_ipv4(),
+				ipv6: m.qr_status_ipv6(),
+				camera: m.qr_status_camera(),
+				overall: m.qr_status_overall(),
+				open: m.qr_status_open(),
+				relay: m.qr_status_relay(),
+				symmetric: m.qr_status_symmetric(),
+				blocked: m.qr_status_blocked()
+			};
+		}
+
+		if (scanner) {
+			scanner.strings = {
+				close: m.qr_scanner_close(),
+				unsupported: m.qr_scanner_unsupported(),
+				starting: m.qr_scanner_starting(),
+				looking: m.qr_scanner_looking(),
+				// Functions, not templates: these carry numbers, and the package
+				// deliberately does not fix our word order onto every consumer.
+				stillLooking: (/** @type {{ attempts: number }} */ { attempts }) =>
+					m.qr_scanner_still_looking({ attempts }),
+				rejected: m.qr_scanner_rejected(),
+				animated: (/** @type {{ received: number, total: number }} */ { received, total }) =>
+					m.qr_scanner_animated({ received, total }),
+				animatedUnknown: m.qr_scanner_animated_unknown()
+			};
+		}
+	}
 
 	// STUN turned off is a setting somebody chose, not a fault to report - #26 is
 	// explicit that reporting a choice as a failure is worse than saying nothing.
@@ -88,13 +162,12 @@
 	onMount(() => {
 		// Loaded in the browser only: this page renders on the server first, where
 		// `customElements` does not exist.
+		// Loaded here, applied in the effect below. The elements live behind
+		// StudioGate, so at this point they are not in the document yet - `status`
+		// and `scanner` are still undefined, and anything set on them now would be
+		// set on nothing.
 		import('@le-space/libp2p-webrtc-qr/elements').then(() => {
-			if (!status) return;
-
-			// The same servers the handshake will use, so the reading is about this
-			// configuration rather than about a default somebody else picked.
-			status.rtcConfiguration = rtcConfiguration();
-			status.probe().catch(() => {});
+			elementsReady = true;
 		});
 
 		// A reply that arrives through a messenger opens a new tab, and the offer

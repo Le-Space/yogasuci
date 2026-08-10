@@ -90,6 +90,30 @@ test.describe('QR handshake', () => {
 		await expect(panel.locator('.line button span:first-child')).toHaveText(['Browser', 'Camera']);
 	});
 
+	test('the readiness panel speaks the language the page is in', async ({ alice }) => {
+		// The elements ship English defaults, which is the right default for the
+		// package and wrong inside a German screen. Without the strings table the
+		// seam exists and the surface stays mixed - the state that looks finished
+		// and is not.
+		await alice.goto('/connect/?ice=host');
+		await onboard(alice, 'alice');
+
+		const labels = alice.getByTestId('network-status').locator('.line button span:first-child');
+
+		// The suite runs in English, so this starts as the package's own default.
+		await expect(labels).toHaveText(['Browser', 'Camera']);
+
+		// Switching reloads the page - paraglide's setLocale does that - so this
+		// also proves the table is applied on a fresh mount rather than only on
+		// the one the test happened to start with.
+		await alice.getByTestId('language-de').click();
+		await expect(alice.getByTestId('network-status')).toBeVisible({ timeout: 120_000 });
+
+		// "Browser" is the same word in both languages, so it proves nothing on
+		// its own. "Kamera" is what shows the table actually reached the element.
+		await expect(labels).toHaveText(['Browser', 'Kamera']);
+	});
+
 	test('shows all five readiness rows when STUN is in play', async ({ alice }) => {
 		// The rest of the suite runs with ?ice=host, so without this the five-row
 		// configuration - the whole of #26 - would never render in a test.
@@ -112,6 +136,13 @@ test.describe('QR handshake', () => {
 			'Camera',
 			'Result'
 		]);
+
+		// A verdict means `probe()` actually ran. Rows render at build time whether
+		// or not anything was measured, so asserting only the labels passes on a
+		// panel that has never asked the network anything - which is exactly what
+		// this page did until the probe moved into an effect that waits for the
+		// element to exist.
+		await expect(panel.locator('.line .verdict').first()).not.toHaveText('');
 	});
 
 	test('answers an invitation carried in the address, with nothing to press', async ({

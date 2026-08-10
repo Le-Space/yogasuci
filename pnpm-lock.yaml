@@ -21,8 +21,8 @@ importers:
         specifier: ^10.0.1
         version: 10.0.1
       '@le-space/libp2p-webrtc-qr':
-        specifier: ^0.6.0
-        version: 0.6.0(@multiformats/multiaddr@13.0.3)(libp2p@3.3.7)
+        specifier: ^0.7.0
+        version: 0.7.0(@multiformats/multiaddr@13.0.3)(libp2p@3.3.7)
       '@le-space/orbitdb-identity-provider-webauthn-did':
         specifier: github:Le-Space/orbitdb-identity-provider-webauthn-did#v0.4.0
         version: https://codeload.github.com/Le-Space/orbitdb-identity-provider-webauthn-did/tar.gz/49bcedae84c9e97e32ae2d85fa7bfa4ae23b3aa8(@orbitdb/core@4.0.0)
@@ -1076,8 +1076,8 @@ packages:
   '@le-space/iso-webauthn-varsig@0.2.0':
     resolution: {integrity: sha512-8sVwcu5yvSKkGZhaXzCA8eSim+TKwMBvz25sNkqGZsUkRIh1s5/PszyjO3C/CZasowHLIouaaLb/xd5VQUNzNw==}
 
-  '@le-space/libp2p-webrtc-qr@0.6.0':
-    resolution: {integrity: sha512-eLc69d3mp1rXXG0f+wGvuYRlMfWuVY8V6+ZnPFROYTGXPeHGnP6D3YO2GK0HRpHCI44Ax/yfKlDtZ3FNe6wMmg==}
+  '@le-space/libp2p-webrtc-qr@0.7.0':
+    resolution: {integrity: sha512-eWk/oU/AEBI6RU8pMAAQnZNBJUMyrqkAXC36BolIacFexPwxENw+QU86nNhKPfqQ2L4BZ7ST61AC26ZuZO70aA==}
     peerDependencies:
       '@multiformats/multiaddr': ^13.0.3
       libp2p: ^3.3.7
@@ -6366,7 +6366,7 @@ snapshots:
     dependencies:
       iso-base: '@le-space/iso-base@4.3.0'
 
-  '@le-space/libp2p-webrtc-qr@0.6.0(@multiformats/multiaddr@13.0.3)(libp2p@3.3.7)':
+  '@le-space/libp2p-webrtc-qr@0.7.0(@multiformats/multiaddr@13.0.3)(libp2p@3.3.7)':
     dependencies:
       '@libp2p/interface': 3.2.5
       '@libp2p/peer-id': 6.0.13
@@ -6375,6 +6375,7 @@ snapshots:
       it-length-prefixed: 11.0.1
       it-pushable: 3.2.4
       libp2p: 3.3.7
+      multiformats: 14.0.5
       p-defer: 4.0.1
       p-event: 7.1.0
       p-timeout: 7.0.1
