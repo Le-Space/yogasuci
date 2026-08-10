@@ -102,10 +102,21 @@ test('the screens the handbook talks about', async ({ alice, bob, carol }) => {
 	await shoot(alice, 'programme');
 
 	// --- Connecting ---------------------------------------------------------
-	await bob.goto('/connect/?ice=host');
+	// Photographed *without* `?ice=host`, unlike the rest of this run. That flag
+	// drops the readiness panel to two rows, and a picture in the handbook showing
+	// a state no visitor ever reaches is worse than a slower screenshot. The rows
+	// render when the panel is built, before any probe resolves, so this does not
+	// make the picture depend on a STUN server answering.
+	await bob.goto('/connect/');
 	await onboard(bob, 'bob');
 	await expect(bob.getByTestId('qr-image')).toBeVisible(READY);
+	await expect(bob.getByTestId('network-status').locator('.line')).toHaveCount(5, READY);
 	await shoot(bob, 'connect');
+
+	// Back to host-only for the handshake itself, which is what the rest of the
+	// run depends on and what must not wait on the network.
+	await bob.goto('/connect/?ice=host');
+	await expect(bob.getByTestId('qr-image')).toBeVisible(READY);
 
 	await connectViaPaste(alice, bob);
 	await expect(bob.getByTestId('join-status')).toHaveAttribute('data-state', 'joined', READY);
