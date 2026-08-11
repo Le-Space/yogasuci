@@ -27,6 +27,15 @@ is no place where they come together.
 **It works when the internet is down.** Check-in only needs the student's phone
 and your device to be in the same room.
 
+**No power and no router: the studio device makes the network itself.** "In the
+same room" does not mean "on the same Wi-Fi". Two devices need a network in
+common to find each other — but no router and no line. Turn on the **personal
+hotspot** on the studio device (Android: _Settings → Connections → Mobile
+hotspot_; iPhone: _Settings → Personal Hotspot_) and have the student join it.
+Check-in then works as usual. No mobile data is spent: the devices talk to each
+other directly, not through the carrier. This is the way outdoors, on retreat,
+and anywhere the power is not dependable.
+
 **There is nobody to call.** No provider who resets a password or restores a lost
 account. That is why this handbook keeps coming back to second devices and
 backups — not small print, but the price of nobody looking over your shoulder.
