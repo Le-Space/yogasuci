@@ -28,6 +28,16 @@ lesen — es gibt keine Stelle, an der sie zusammenlaufen.
 **Es funktioniert, wenn das Internet ausfällt.** Der Check-in braucht nur, dass
 das Telefon des Schülers und euer Gerät im selben Raum sind.
 
+**Ohne Strom und ohne Router: das Studiogerät macht das Netz selbst.** „Im
+selben Raum" heißt nicht „im selben WLAN". Zwei Geräte brauchen ein gemeinsames
+Netz, um sich zu finden — aber keinen Router und keinen Anschluss. Schaltet am
+Studiogerät den **persönlichen Hotspot** ein (Android: _Einstellungen →
+Verbindungen → Mobile Hotspot_; iPhone: _Einstellungen → Persönlicher Hotspot_)
+und lasst den Schüler sich damit verbinden. Danach läuft der Check-in wie
+gewohnt. Kein Datenvolumen wird verbraucht: Die Geräte reden direkt miteinander,
+nicht über das Mobilfunknetz. Das ist der Weg im Freien, im Retreat und überall,
+wo der Strom nicht verlässlich ist.
+
 **Es gibt niemanden, den man anrufen kann.** Kein Anbieter, der euer Passwort
 zurücksetzt oder ein verlorenes Konto wiederherstellt. Deshalb steht in diesem
 Handbuch mehrfach etwas zu Zweitgeräten und Sicherungen — das ist nicht
