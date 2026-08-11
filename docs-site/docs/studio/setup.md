@@ -36,7 +36,19 @@ nicht mehr zuordnen.
 
 ![Studio und Standorte](/img/screens/de/studio.png)
 
-## 4. Zweitgerät verbinden — nicht überspringen
+## 4. Programm und Preise — oder aus eurer Website übernehmen
+
+Kursplan, Karten und Preise tragt ihr unter **Programm** ein. Wenn das alles auf
+eurer Website schon steht, müsst ihr es nicht abtippen: Ganz unten auf derselben
+Seite liegt **Programm übernehmen**. Ihr kopiert dort einen Prompt, lasst ihn bei
+einem KI-Assistenten eurer Wahl laufen und fügt die Antwort zurück ein. Nichts
+wird geschrieben, bevor ihr es geprüft habt, und eure Website sehen wir nie.
+
+Wie das im Einzelnen geht — was regelmäßig nicht durchkommt, warum ihr die Preise
+gegenprüfen solltet und was zu tun ist, wenn ein Import danebenging — steht unter
+[Programm und Preise](/studio/programme).
+
+## 5. Zweitgerät verbinden — nicht überspringen
 
 <div class="no-server">
 
@@ -52,7 +64,7 @@ wegklicken — das ist Absicht.
 
 Wie das geht, steht unter [Geräte](/studio/devices).
 
-## 5. Sicherung anlegen
+## 6. Sicherung anlegen
 
 Unter **Registry → Export** ladet ihr eine Datei mit allem herunter, was dieses
 Gerät weiß — einschließlich der signierten Kaufbelege. Legt sie dorthin, wo eure

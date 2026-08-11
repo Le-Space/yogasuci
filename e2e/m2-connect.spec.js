@@ -90,6 +90,31 @@ test.describe('QR handshake', () => {
 		await expect(panel.locator('.line button span:first-child')).toHaveText(['Browser', 'Camera']);
 	});
 
+	test('labels the panel in the language of the page, not the package', async ({ alice }) => {
+		// The elements come from @le-space/libp2p-webrtc-qr and ship English. Left
+		// alone, the German page showed "Browser · IPv4 · IPv6 · Camera · Result"
+		// under German headings — the one string on this screen that our own i18n
+		// rule could not reach until the package grew a seam for it (upstream #51).
+		// The locale has to be set the way the app reads it. Chromium reports
+		// English, and in English the package defaults are already correct — so
+		// asserting there would pass whether or not any of this is wired up.
+		await alice.addInitScript(() => localStorage.setItem('PARAGLIDE_LOCALE', 'de'));
+
+		await alice.goto('/connect/');
+		await onboard(alice, 'alice');
+
+		const panel = alice.getByTestId('network-status');
+		await expect(panel).toBeVisible();
+
+		await expect(panel.locator('.line button span:first-child')).toHaveText([
+			'Browser',
+			'IPv4',
+			'IPv6',
+			'Kamera',
+			'Ergebnis'
+		]);
+	});
+
 	test('shows all five readiness rows when STUN is in play', async ({ alice }) => {
 		// The rest of the suite runs with ?ice=host, so without this the five-row
 		// configuration - the whole of #26 - would never render in a test.

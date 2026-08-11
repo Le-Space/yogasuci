@@ -30,6 +30,7 @@
 	import { buildLink, readLink } from '$lib/p2p/invite.js';
 	import { iceMode, rtcConfiguration } from '$lib/p2p/libp2p-config.js';
 	import { createHandoff } from '$lib/p2p/handoff.js';
+	import { inviteStrings, scannerStrings, statusStrings } from '$lib/p2p/element-strings.js';
 	import { introduceToPeer, joinStore, joinStudioFromPeer } from '$lib/db/join.js';
 	import { studioStore } from '$lib/db/registry.js';
 	import * as m from '$lib/paraglide/messages.js';
@@ -66,6 +67,8 @@
 	/** @type {any} */
 	let scanner = $state(null);
 	let status = $state();
+	/** @type {any} */
+	let invite = $state(null);
 
 	// STUN turned off is a setting somebody chose, not a fault to report - #26 is
 	// explicit that reporting a choice as a failure is worse than saying nothing.
@@ -85,17 +88,13 @@
 	/** @type {ReturnType<typeof createHandoff> | null} */
 	let handoff = null;
 
+	/** Resolves once the custom elements are defined. */
+	let elementsReady = $state(false);
+
 	onMount(() => {
 		// Loaded in the browser only: this page renders on the server first, where
 		// `customElements` does not exist.
-		import('@le-space/libp2p-webrtc-qr/elements').then(() => {
-			if (!status) return;
-
-			// The same servers the handshake will use, so the reading is about this
-			// configuration rather than about a default somebody else picked.
-			status.rtcConfiguration = rtcConfiguration();
-			status.probe().catch(() => {});
-		});
+		import('@le-space/libp2p-webrtc-qr/elements').then(() => (elementsReady = true));
 
 		// A reply that arrives through a messenger opens a new tab, and the offer
 		// it answers lives in this one. Take it if it is ours.
@@ -162,6 +161,27 @@
 		unsubscribeSignalling();
 		handoff?.close();
 		if (refreshTimer) clearInterval(refreshTimer);
+	});
+
+	// Not in onMount: these elements sit inside StudioGate, which renders nothing
+	// until the node and the studio are ready. At mount they are not in the
+	// document yet, so a one-shot assignment there set the strings on nothing and
+	// - worse, because it was silent - never ran the probe either. An effect runs
+	// again when each binding fills in.
+	$effect(() => {
+		if (!elementsReady) return;
+
+		// English is what the package ships; this is the seam it grew for us.
+		if (invite) invite.strings = inviteStrings();
+		if (scanner) scanner.strings = scannerStrings();
+
+		if (!status) return;
+
+		status.strings = statusStrings();
+		// The same servers the handshake will use, so the reading is about this
+		// configuration rather than about a default somebody else picked.
+		status.rtcConfiguration = rtcConfiguration();
+		status.probe().catch(() => {});
 	});
 
 	/** Answer an invitation we were opened with, or offer one of our own. */
@@ -458,6 +478,7 @@
 				     string a camera would read. -->
 				<div class="qr-field mt-4 inline-block">
 					<qr-invite
+						bind:this={invite}
 						value={link}
 						data-testid="qr-image"
 						data-link={link}

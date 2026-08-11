@@ -33,7 +33,19 @@ ticket has to stay readable, or an old redemption can no longer be placed.
 
 ![Studio and locations](/img/screens/en/studio.png)
 
-## 4. Connect a second device — do not skip this
+## 4. Programme and prices — or take them over from your website
+
+You enter the timetable, passes and prices under **Programme**. If all of it is
+already on your website, you do not have to retype it: at the bottom of that same
+page is **Take over a programme**. You copy a prompt there, run it in an AI
+assistant of your choosing, and paste the answer back. Nothing is written until
+you have reviewed it, and we never see your website.
+
+How it works in detail — what regularly does not come through, why to check the
+prices, and what to do when an import went wrong — is under
+[Programme and prices](/studio/programme).
+
+## 5. Connect a second device — do not skip this
 
 <div class="no-server">
 
@@ -48,7 +60,7 @@ away once a second one is approved. It cannot be dismissed — deliberately.
 
 How to do it: [Devices](/studio/devices).
 
-## 5. Make a backup
+## 6. Make a backup
 
 Under **Registry → Export** you download a file with everything this device knows,
 including the signed receipts. Put it where your bookkeeping lives.
