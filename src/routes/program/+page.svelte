@@ -25,7 +25,8 @@
 	import { generateSessions } from '$lib/program/sessions.js';
 	import { canEditProgram } from '$lib/db/join.js';
 	import { nextOccurrence } from '$lib/program/sessions.js';
-	import { requestBooking } from '$lib/db/bookings.js';
+	import { bookingsStore, cancelBooking, requestBooking } from '$lib/db/bookings.js';
+	import { connectedPeersStore } from '$lib/p2p/node.js';
 	import { readOccupancy } from '$lib/db/occupancy.js';
 	import { devicesStore, studioStore } from '$lib/db/registry.js';
 	import { getLocale } from '$lib/paraglide/runtime.js';
@@ -143,7 +144,29 @@
 	 *
 	 * @param {any} course
 	 */
-	async function book(course) {
+	/**
+	 * This device's own live request for a course, if there is one.
+	 *
+	 * Cancelled and declined requests are not "live": both mean the place is not
+	 * held, and hiding the button behind them would leave somebody unable to ask
+	 * again. A declined one is still *shown*, because silently reverting to a
+	 * plain button would look like the request was never made.
+	 *
+	 * @param {any} course
+	 */
+	function bookingFor(course) {
+		const date =
+			course.mode === 'series'
+				? null
+				: nextOccurrence(course, new Date().toISOString().slice(0, 10));
+
+		return $bookingsStore.find(
+			(entry) =>
+				entry.courseId === course._id && entry.date === date && entry.status !== 'cancelled'
+		);
+	}
+
+	async function book(/** @type {any} */ course) {
 		await run(async () => {
 			const date =
 				course.mode === 'series'
@@ -299,14 +322,60 @@
 					</span>
 
 					{#if entry.active}
-						<button
-							type="button"
-							data-testid="course-book"
-							onclick={() => book(entry)}
-							class="rounded-control bg-accent px-3 py-1 text-sm font-medium text-accent-contrast"
-						>
-							{m.booking_book()}
-						</button>
+						{@const mine = bookingFor(entry)}
+						{#if mine}
+							<!--
+								The state replaces the button rather than sitting next to it.
+								A button that stays offerable after a request is how somebody
+								asks twice, which is exactly what happened here.
+							-->
+							<span
+								class="text-sm"
+								class:text-success={mine.status === 'confirmed'}
+								class:text-warning={mine.status === 'requested'}
+								class:text-danger={mine.status === 'declined'}
+								data-testid="course-booking-state"
+								data-status={mine.status}
+							>
+								{mine.status === 'confirmed'
+									? m.booking_state_confirmed()
+									: mine.status === 'declined'
+										? m.booking_state_declined()
+										: m.booking_state_requested()}
+							</span>
+
+							{#if mine.status === 'requested'}
+								<!--
+									Written here is not the same as arrived there. Without a
+									server nothing can confirm delivery, so the honest signal is
+									whether anybody was connected to carry it — said plainly
+									rather than implied by a spinner that would never resolve.
+								-->
+								<span class="text-xs text-faint" data-testid="course-booking-delivery">
+									{$connectedPeersStore.length > 0
+										? m.booking_delivered()
+										: m.booking_not_delivered()}
+								</span>
+
+								<button
+									type="button"
+									data-testid="course-booking-withdraw"
+									onclick={() => run(() => cancelBooking(mine._id))}
+									class="rounded-control border border-border px-2 py-1 text-sm"
+								>
+									{m.booking_withdraw()}
+								</button>
+							{/if}
+						{:else}
+							<button
+								type="button"
+								data-testid="course-book"
+								onclick={() => book(entry)}
+								class="rounded-control bg-accent px-3 py-1 text-sm font-medium text-accent-contrast"
+							>
+								{m.booking_book()}
+							</button>
+						{/if}
 					{/if}
 					{#if entry.active && canEdit}
 						<button
