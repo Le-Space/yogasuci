@@ -18,6 +18,18 @@
 
 	let peers = $derived($connectedPeersStore.length);
 
+	// The newest inbound sync across all open databases. Peers connected says two
+	// devices found each other; this says something actually crossed — which is
+	// the question somebody at a counter is really asking, and the one the bar
+	// could not answer before.
+	let lastReceived = $derived(
+		$databaseStatusStore.reduce(
+			(/** @type {string | null} */ newest, row) =>
+				row.syncedAt && (!newest || row.syncedAt > newest) ? row.syncedAt : newest,
+			null
+		)
+	);
+
 	// The oldest database is the one that limits what this device can be sure of,
 	// so it is the one the summary line reports. Taking the newest would flatter
 	// the device: one busy database would hide four stale ones.
@@ -60,6 +72,10 @@
 			{m.sync_last_change({ time: formatTime(oldestChange) })}
 		</span>
 
+		<span class="text-faint" data-testid="sync-received" data-received={lastReceived ?? ''}>
+			{lastReceived ? m.sync_received({ time: formatTime(lastReceived) }) : m.sync_received_never()}
+		</span>
+
 		{#if $databaseStatusStore.length > 0}
 			<details class="ml-auto">
 				<summary class="cursor-pointer text-faint" data-testid="sync-details-toggle">
@@ -69,6 +85,9 @@
 					{#each $databaseStatusStore as row (row.address)}
 						<li data-testid="sync-database" data-key={row.key}>
 							{row.key} · {m.sync_entries({ count: row.entries })} · {formatTime(row.changedAt)}
+							{#if row.syncedAt}
+								· {m.sync_received({ time: formatTime(row.syncedAt) })}
+							{/if}
 						</li>
 					{/each}
 				</ul>

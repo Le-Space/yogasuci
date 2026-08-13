@@ -262,6 +262,8 @@
 	"sync_last_change": "Letzte Änderung hier: {time}",
 	"sync_local_only": "Lokal erfasst — noch nicht beim Studio angekommen",
 	"sync_peers": "{count} Gerät(e) verbunden",
+	"sync_received": "zuletzt empfangen {time}",
+	"sync_received_never": "noch nichts empfangen",
 	"sync_status_title": "Sync-Status",
 	"theme_dark": "Dunkel",
 	"theme_light": "Hell",

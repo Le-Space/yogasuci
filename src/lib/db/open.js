@@ -95,7 +95,7 @@ export async function openDocuments({ key, name, address, accessController }) {
 /**
  * What each open database looks like right now, for the sync status strip.
  *
- * @type {import('svelte/store').Writable<{ key: string, address: string, entries: number, changedAt: string | null }[]>}
+ * @type {import('svelte/store').Writable<{ key: string, address: string, entries: number, changedAt: string | null, syncedAt: string | null }[]>}
  */
 export const databaseStatusStore = writable(/** @type {any[]} */ ([]));
 
@@ -115,6 +115,13 @@ export const databaseStatusStore = writable(/** @type {any[]} */ ([]));
 function trackFreshness(key, db) {
 	const address = db.address.toString();
 
+	// The last time a peer's heads reached this database. Separate from
+	// `changedAt` because `update` cannot tell the two apart: OrbitDB emits it
+	// both from `addOperation` (this device wrote) and `applyOperation` (a peer
+	// sent it). `join` fires only on the receiving side, which makes it the one
+	// event that answers "did anything actually come in".
+	let syncedAt = /** @type {string | null} */ (null);
+
 	const publish = async () => {
 		const entries = await db.all().then(
 			(/** @type {any[]} */ rows) => rows.length,
@@ -123,12 +130,21 @@ function trackFreshness(key, db) {
 
 		databaseStatusStore.update((rows) => {
 			const next = rows.filter((row) => row.address !== address);
-			next.push({ key, address, entries, changedAt: new Date().toISOString() });
+			next.push({ key, address, entries, changedAt: new Date().toISOString(), syncedAt });
 			return next.sort((a, b) => (a.key < b.key ? -1 : 1));
 		});
 	};
 
 	db.events.on('update', publish);
+
+	// Recorded even when the exchange brought nothing new. "A device synchronised
+	// with us at 14:32" is true either way, and it is the answer to the question
+	// somebody at a counter is actually asking — whether the two are talking.
+	db.events.on('join', () => {
+		syncedAt = new Date().toISOString();
+		void publish();
+	});
+
 	publish();
 }
 

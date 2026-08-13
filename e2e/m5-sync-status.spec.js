@@ -5,7 +5,7 @@
 // me about it", and a contradiction between two good-faith decisions must be
 // stated rather than quietly resolved.
 
-import { test, expect, connectViaPaste, onboard } from './fixtures.js';
+import { test, expect, connectViaPaste, onboard, openConnect } from './fixtures.js';
 
 const READY = { timeout: 90_000 };
 const REPLICATED = { timeout: 90_000 };
@@ -140,6 +140,39 @@ test.describe('conflicts', () => {
 		// refunding the unit would be the app deciding something only a person can.
 		await bob.getByTestId('nav-tickets').click();
 		await expect(bob.getByTestId('ticket-balance')).toHaveText('9', REPLICATED);
+	});
+
+	test('says when something last came in, not only that a peer is there', async ({
+		alice,
+		bob
+	}) => {
+		// "2 devices connected" says they found each other. It does not say
+		// anything crossed — and that was the whole complaint: the bar looked the
+		// same whether replication worked or silently did not.
+		test.setTimeout(420_000);
+
+		await setUpStudio(alice);
+
+		// Onboarded but not yet paired: nothing has arrived, and the bar says so
+		// rather than leaving the field blank, which reads as "unknown". The bar
+		// does not exist before onboarding, so this cannot be asserted earlier.
+		await openConnect(bob, 'bob');
+		await expect(bob.getByTestId('sync-received')).toHaveAttribute('data-received', '');
+
+		await connectViaPaste(alice, bob);
+		await expect(bob.getByTestId('join-status')).toHaveAttribute('data-state', 'joined', READY);
+
+		// Now something has: the studio's programme reached Bob, and the bar can
+		// name when. Asserted through the attribute rather than the text, so the
+		// test does not depend on how a time is formatted.
+		await expect(bob.getByTestId('sync-received')).not.toHaveAttribute('data-received', '', READY);
+
+		// And it stays after hanging up: what arrived is still what arrived. A bar
+		// that forgot on disconnect would be reporting the connection twice.
+		await bob.getByTestId('nav-connect').click();
+		await bob.getByTestId('hang-up').click();
+		await expect(bob.getByTestId('sync-status')).toHaveAttribute('data-peers', '0', READY);
+		await expect(bob.getByTestId('sync-received')).not.toHaveAttribute('data-received', '');
 	});
 });
 
