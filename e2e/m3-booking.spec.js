@@ -6,7 +6,7 @@
 // — because someone reintroduced a shared database, say — the app is handing
 // classmates each other's attendance records again.
 
-import { test, expect, connectViaPaste, onboard } from './fixtures.js';
+import { connectViaPaste, expect, onboard, openCourseForm, test } from './fixtures.js';
 
 const READY = { timeout: 90_000 };
 const REPLICATED = { timeout: 90_000 };
@@ -291,6 +291,7 @@ async function setUpStudio(page, { capacity } = {}) {
 
 	await page.getByTestId('nav-program').click();
 	await expect(page.getByTestId('studio-ready')).toBeVisible(READY);
+	await openCourseForm(page);
 	await page.getByTestId('course-mode').selectOption('recurring');
 	await page.getByTestId('course-id').fill('vinyasa-mi-18');
 	await page.getByTestId('course-location').selectOption('location:altstadt');

@@ -326,3 +326,30 @@ export async function connectViaCamera(offerer, who = 'scanner') {
 		}
 	};
 }
+
+/**
+ * Open the course form.
+ *
+ * The programme editor puts both forms in a dialog now, so every test that fills
+ * one has to open it first. Kept here rather than repeated per spec: the form
+ * moved once and could move again, and nine copies of "click the button" is nine
+ * places to fix.
+ *
+ * @param {Page} page
+ */
+export async function openCourseForm(page) {
+	if (await page.getByTestId('course-mode').isVisible()) return;
+	await page.getByTestId('course-new').click();
+	await expect(page.getByTestId('course-mode')).toBeVisible();
+}
+
+/**
+ * Open the pass form.
+ *
+ * @param {Page} page
+ */
+export async function openPackageForm(page) {
+	if (await page.getByTestId('package-id').isVisible()) return;
+	await page.getByTestId('package-new').click();
+	await expect(page.getByTestId('package-id')).toBeVisible();
+}

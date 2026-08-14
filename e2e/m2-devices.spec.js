@@ -5,7 +5,7 @@
 // the revocation. Checking only that the registry shows the right entries would
 // pass just as happily with the ACL never touched.
 
-import { test, expect, connectViaPaste, onboard } from './fixtures.js';
+import { connectViaPaste, expect, onboard, openCourseForm, test } from './fixtures.js';
 
 const READY = { timeout: 90_000 };
 const REPLICATED = { timeout: 90_000 };
@@ -65,8 +65,13 @@ test.describe('device onboarding', () => {
 		// The approval reaches Carol by replication, so her editor appears
 		// without a reload.
 		await carol.getByTestId('nav-program').click();
-		await expect(carol.getByTestId('course-add')).toBeVisible(REPLICATED);
+		// The *opening* button, not the save button: the form lives in a dialog now,
+		// so `course-add` is in the document but not visible until it opens. What
+		// this line is about is the permission, and `course-new` is what carries it.
+		await expect(carol.getByTestId('course-new')).toBeVisible(REPLICATED);
 		await expect(carol.getByTestId('guest-notice')).toHaveCount(0);
+
+		await openCourseForm(carol);
 
 		await carol.getByTestId('course-mode').selectOption('recurring');
 		await carol.getByTestId('course-id').fill('vinyasa-mi-18');

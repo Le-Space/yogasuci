@@ -5,7 +5,14 @@
 // signature verifies against the registry, and that both devices fold the same
 // log into the same number.
 
-import { test, expect, connectViaPaste, onboard } from './fixtures.js';
+import {
+	connectViaPaste,
+	expect,
+	onboard,
+	openCourseForm,
+	openPackageForm,
+	test
+} from './fixtures.js';
 
 const READY = { timeout: 90_000 };
 const REPLICATED = { timeout: 90_000 };
@@ -95,6 +102,8 @@ async function setUpStudio(page) {
 	await page.getByTestId('nav-program').click();
 	await expect(page.getByTestId('studio-ready')).toBeVisible(READY);
 
+	await openPackageForm(page);
+
 	await page.getByTestId('package-id').fill('zehner');
 	await page.getByTestId('package-name-de').fill('10er-Karte');
 	await page.getByTestId('package-name-en').fill('10-class pass');
@@ -103,6 +112,8 @@ async function setUpStudio(page) {
 	await page.getByTestId('package-validity-days').fill('30');
 	await page.getByTestId('package-add').click();
 	await expect(page.locator('[data-package-id="package:zehner"]')).toBeVisible();
+
+	await openCourseForm(page);
 
 	await page.getByTestId('course-mode').selectOption('recurring');
 	await page.getByTestId('course-id').fill('vinyasa-mi-18');
