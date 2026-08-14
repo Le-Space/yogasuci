@@ -25,7 +25,14 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { base } from '$app/paths';
 	import StudioGate from '$lib/components/StudioGate.svelte';
-	import { connectedPeersStore, hangUp, peerIdStore, signallingStore } from '$lib/p2p/node.js';
+	import {
+		connectedPeersStore,
+		disconnectPeer,
+		hangUp,
+		peerIdStore,
+		peerStatesStore,
+		signallingStore
+	} from '$lib/p2p/node.js';
 	import { sharePayload } from '$lib/p2p/qr.js';
 	import { buildLink, readLink } from '$lib/p2p/invite.js';
 	import { iceMode, rtcConfiguration } from '$lib/p2p/libp2p-config.js';
@@ -70,6 +77,37 @@
 	 */
 	let shortCode = $state(false);
 
+	/**
+	 * Whether this device's code is off screen because it has been used.
+	 *
+	 * Not derived from `step`: `step` is already 'connected' when a second device
+	 * pairs, so a rule written on it would hide the first code and then leave the
+	 * next one up for good. What actually means "this code did its job" is the
+	 * number of connected devices going up, which is true every time.
+	 */
+	let codeHidden = $state(false);
+
+	/** Whether a code from another device was read, and read successfully. */
+	let scanAccepted = $state(false);
+
+	/**
+	 * Deliberately not `$state`: it is the effect's own memory of what it last
+	 * saw, and making it reactive would have the effect retrigger itself.
+	 */
+	let seenPeerCount = 0;
+
+	$effect(() => {
+		const count = $connectedPeersStore.length;
+
+		if (count > seenPeerCount) codeHidden = true;
+		seenPeerCount = count;
+	});
+
+	function showCodeAgain() {
+		codeHidden = false;
+		scanAccepted = false;
+	}
+
 	/** @type {HTMLVideoElement | undefined} */
 	// Typed loosely on purpose: svelte-check has no element interface for
 	// <qr-scanner> and falls back to HTMLVideoElement, which has neither open()
@@ -77,6 +115,8 @@
 	/** @type {any} */
 	let scanner = $state(null);
 	let status = $state();
+	/** @type {any} */
+	let peerList = $state(null);
 	let elementsReady = $state(false);
 
 	/**
@@ -151,6 +191,59 @@
 			};
 		}
 	}
+
+	/**
+	 * Who is connected, and how that connection is doing.
+	 *
+	 * The membership comes from libp2p, because that is what decides whether this
+	 * device can exchange anything with that one. The health comes from WebRTC
+	 * underneath it, and falls back to `connected` rather than to nothing: an
+	 * inbound peer whose handshake this page never saw is genuinely connected, and
+	 * a row reading "connecting…" forever would be a lie about a working device.
+	 */
+	let devices = $derived(
+		$connectedPeersStore.map((peerId) => ({
+			peerId,
+			state: $peerStatesStore[peerId] ?? 'connected'
+		}))
+	);
+
+	/**
+	 * A property, not an attribute: `peers` is an array, and `<qr-peers>` is only
+	 * defined once the dynamic import above has resolved. Assigning through
+	 * `bind:this` is what the rest of this screen does with the elements for the
+	 * same reason.
+	 */
+	$effect(() => {
+		if (peerList) peerList.peers = devices;
+	});
+
+	/**
+	 * The peer list gets its own effect, because it is not in the document when
+	 * the one above runs.
+	 *
+	 * `<qr-peers>` only renders once somebody is connected, which is minutes after
+	 * the screen mounted. Translating it up there would set `strings` on nothing —
+	 * the same mistake that once left the readiness panel English *and* unprobed.
+	 * Reading `peerList` here is what makes this re-run when the element appears.
+	 */
+	$effect(() => {
+		if (!elementsReady || !peerList) return;
+
+		peerList.strings = {
+			connected: m.qr_peers_connected(),
+			connecting: m.qr_peers_connecting(),
+			new: m.qr_peers_connecting(),
+			disconnected: m.qr_peers_disconnected(),
+			failed: m.qr_peers_failed(),
+			closed: m.qr_peers_closed(),
+			disconnect: m.qr_peers_disconnect(),
+			// A function, not a template: the package does not fix our word order
+			// onto every consumer, and this one carries a value.
+			disconnectFrom: (/** @type {{ peerId: string }} */ { peerId }) =>
+				m.qr_peers_disconnect_from({ peerId })
+		};
+	});
 
 	// STUN turned off is a setting somebody chose, not a fault to report - #26 is
 	// explicit that reporting a choice as a failure is worse than saying nothing.
@@ -338,6 +431,7 @@
 
 	async function refreshInvite() {
 		failure = '';
+		scanAccepted = false;
 		try {
 			await makeInvitation();
 		} catch (/** @type {any} */ error) {
@@ -380,6 +474,9 @@
 
 			if (kind === 'offer') {
 				const { answer, remotePeerId, connected } = await $signallingStore.acceptOffer(trimmed);
+				// Only now: `acceptOffer` verifies the signature, so anything short of
+				// this is "a code was seen", not "a code was read".
+				scanAccepted = true;
 				// Show the reply straight away: it is what the other device is
 				// waiting for, and it is ready long before the link comes up.
 				await showPayload(answer, 'reply');
@@ -399,6 +496,10 @@
 				return;
 			}
 
+			// The inviting side reads a code too — the reply. Same acknowledgement,
+			// because the person holding this device has the same doubt about the
+			// camera, and `acceptAnswer` below is the slow half.
+			scanAccepted = true;
 			step = 'connecting';
 			const remotePeerId = await $signallingStore.acceptAnswer(trimmed);
 
@@ -488,8 +589,12 @@
 
 	<p class="mt-2 text-sm" data-testid="connection-status" data-step={step}>
 		{#if step === 'connected'}
-			<span class="break-all text-success">
-				{m.connect_status_connected({ peer: $connectedPeersStore[0] ?? '' })}
+			<!-- A count, not the first peer id. With three devices connected, naming
+			     one of them and staying silent about the others was the bug: the
+			     screen said "connected to …" and looked the same whether one device
+			     or four were on the other end. The ids are in the list below. -->
+			<span class="text-success">
+				{m.sync_peers({ count: $connectedPeersStore.length })}
 			</span>
 		{:else if step === 'failed'}
 			<span class="text-danger">{m.connect_status_failed({ reason: failure })}</span>
@@ -506,6 +611,21 @@
 		{/if}
 	</p>
 
+	<!--
+		The read itself, acknowledged.
+
+		Scanning used to be silent about the one thing the person doing it is
+		unsure of: whether the camera actually got it. The screen changed — a new
+		code appeared where the old one was — but nothing said that change was
+		caused by a successful read rather than by the invitation renewing itself.
+		Gone once connected, where the connection is the better news.
+	-->
+	{#if scanAccepted && (step === 'replying' || step === 'connecting')}
+		<p class="mt-2 text-sm text-success" data-testid="scan-accepted">
+			{m.connect_scan_accepted()}
+		</p>
+	{/if}
+
 	{#if $joinStore.state !== 'idle'}
 		<p class="mt-1 text-sm" data-testid="join-status" data-state={$joinStore.state}>
 			{#if $joinStore.state === 'joined'}
@@ -516,6 +636,28 @@
 				<span class="text-muted">{m.join_busy()}</span>
 			{/if}
 		</p>
+	{/if}
+
+	<!--
+		Who is on the other end — all of them.
+
+		Until now this screen could connect a second, third and fourth device and
+		show none of it: one line naming the first peer, and a front desk with a
+		teacher and two students on it looked exactly like a front desk with one.
+		The per-row disconnect is the reason it is a list rather than a count: a
+		student leaving should not cost the two connections that are staying.
+	-->
+	{#if devices.length > 0}
+		<section class="mt-4 max-w-md" data-testid="devices">
+			<h2 class="text-sm font-medium">{m.connect_devices_title()}</h2>
+			<qr-peers
+				bind:this={peerList}
+				data-testid="device-list"
+				class="mt-2 block"
+				style="--qr-peers-background: transparent; --qr-peers-border: currentColor; --qr-peers-accent: currentColor; --qr-peers-muted: currentColor;"
+				ondisconnect={(/** @type {any} */ event) => disconnectPeer(event.detail.peerId)}
+			></qr-peers>
+		</section>
 	{/if}
 
 	{#if step === 'handed-over'}
@@ -540,11 +682,51 @@
 		style="--qr-status-chip-background: transparent; --qr-status-chip-color: inherit; --qr-status-verdict-color: inherit;"
 	></qr-status>
 
-	{#if payload && step !== 'handed-over'}
-		<section class="mt-6 max-w-md rounded-card border border-border bg-surface p-6">
+	<!--
+		A code that has done its job comes down.
+
+		It used to stay: the screen re-armed itself with the next invitation the
+		moment a connection came up, so a device that had just paired went on
+		holding up a code nobody was waiting for. At a counter that reads as "it
+		did not work" — the one thing on screen has not changed. Inviting the next
+		person is one press away rather than automatic, which is also the honest
+		order: most of the time there is no next person.
+	-->
+	{#if codeHidden && step === 'connected'}
+		<button
+			type="button"
+			data-testid="show-code"
+			onclick={showCodeAgain}
+			class="mt-6 rounded-control border border-border px-4 py-2"
+		>
+			{m.connect_another()}
+		</button>
+	{/if}
+
+	{#if payload && step !== 'handed-over' && !codeHidden}
+		<section
+			class="mt-6 max-w-md rounded-card border border-border bg-surface p-6"
+			data-testid="code-card"
+			data-kind={step === 'replying' ? 'reply' : 'invite'}
+		>
 			<div class="flex flex-wrap items-start justify-between gap-3">
 				<div class="min-w-0">
-					<h2 class="text-lg font-medium">
+					<!--
+						Named on the code itself, not only in the heading. The reply
+						occupies the same card in the same place as the invitation, so
+						without this the screen looks unchanged at the exact moment it
+						changed meaning — and the other device is then shown a code
+						nobody can tell apart from the one it just scanned.
+					-->
+					<p
+						class="text-xs font-semibold tracking-wide uppercase {step === 'replying'
+							? 'text-accent'
+							: 'text-muted'}"
+						data-testid="code-kind"
+					>
+						{step === 'replying' ? m.connect_kind_reply() : m.connect_kind_invite()}
+					</p>
+					<h2 class="mt-1 text-lg font-medium">
 						{step === 'replying' ? m.connect_reply_title() : m.connect_ready_title()}
 					</h2>
 					<p class="mt-1 text-sm text-muted">

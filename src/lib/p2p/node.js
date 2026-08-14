@@ -33,6 +33,42 @@ export const ownDidStore = writable(/** @type {string | null} */ (null));
 export const signallingStore = writable(/** @type {any} */ (null));
 export const connectedPeersStore = writable(/** @type {string[]} */ ([]));
 
+/**
+ * What WebRTC thinks of each connected device, by peer id.
+ *
+ * Separate from `connectedPeersStore` rather than folded into it, because the
+ * two answer different questions and one of them is load-bearing everywhere:
+ * `connectedPeersStore` is "who can this device exchange data with", which is
+ * libp2p's answer, and half the app counts it. This is the health of the path
+ * underneath, which is only ever display.
+ *
+ * The distinction shows up as amber: WebRTC reports `disconnected` for a
+ * connection that has lost its path and may well get it back — a phone whose
+ * radio slept usually does — while libp2p still holds the connection. That is
+ * worth showing as a wait rather than as an end, and it is invisible from
+ * libp2p's side alone.
+ *
+ * @type {import('svelte/store').Writable<Record<string, string>>}
+ */
+export const peerStatesStore = writable({});
+
+/**
+ * peer id → the RTCPeerConnection carrying it.
+ *
+ * Built from the session's `connect` event, which is the one place the two
+ * arrive together: outbound sessions are keyed by session id, and inbound ones
+ * are a bare set of peer connections with no peer id attached.
+ *
+ * @type {Map<string, RTCPeerConnection>}
+ */
+const peerConnections = new Map();
+
+function publishPeerStates() {
+	peerStatesStore.set(
+		Object.fromEntries([...peerConnections].map(([id, pc]) => [id, pc.connectionState]))
+	);
+}
+
 export const nodeStatusStore = writable(
 	/** @type {{ state: 'idle' | 'starting' | 'ready' | 'error', error: string | null }} */ ({
 		state: 'idle',
@@ -94,6 +130,7 @@ export async function startNode({ passkeyCredential = null } = {}) {
 		peerIdStore.set(libp2p.peerId.toString());
 		signallingStore.set(signalling);
 		trackConnections(libp2p);
+		trackPeerHealth(signalling);
 		installDiagnostics();
 		nodeStatusStore.set({ state: 'ready', error: null });
 
@@ -126,7 +163,35 @@ export async function hangUp() {
 		await connection.close().catch(() => {});
 	}
 
+	peerConnections.clear();
+	peerStatesStore.set({});
 	connectedPeersStore.set([]);
+}
+
+/**
+ * End the connection to one device, leaving the others alone.
+ *
+ * The counter case `hangUp` cannot serve: a front desk paired with two teachers
+ * and a student who is now leaving should not have to drop all three and pair
+ * the other two again. Once more than one device can be connected at a time,
+ * "done with this one" has to mean one.
+ *
+ * Both layers again, and for the same reason as in `hangUp`: closing the libp2p
+ * connection while its RTCPeerConnection stays open leaves a path that can be
+ * dialled straight back up.
+ *
+ * @param {string} peerId
+ */
+export async function disconnectPeer(peerId) {
+	peerConnections.get(peerId)?.close();
+	peerConnections.delete(peerId);
+
+	for (const connection of running?.libp2p?.getConnections() ?? []) {
+		if (connection.remotePeer.toString() !== peerId) continue;
+		await connection.close().catch(() => {});
+	}
+
+	publishPeerStates();
 }
 
 export async function stopNode() {
@@ -380,12 +445,42 @@ function installDiagnostics() {
 	});
 }
 
+/**
+ * Keep `peerStatesStore` in step with what WebRTC is doing.
+ *
+ * @param {any} signalling
+ */
+function trackPeerHealth(signalling) {
+	signalling.onConnect((/** @type {any} */ event) => {
+		const { peerId, peerConnection } = event.detail;
+		if (!peerId || !peerConnection) return;
+
+		peerConnections.set(peerId, peerConnection);
+		// Republish on every change rather than polling: `disconnected` is exactly
+		// the state nobody is looking at the screen for, and a poll would show it
+		// late or not at all.
+		peerConnection.addEventListener('connectionstatechange', publishPeerStates);
+		publishPeerStates();
+	});
+}
+
 /** @param {any} libp2p */
 function trackConnections(libp2p) {
-	const update = () =>
-		connectedPeersStore.set([
+	const update = () => {
+		const peers = [
 			...new Set(libp2p.getConnections().map((/** @type {any} */ c) => c.remotePeer.toString()))
-		]);
+		];
+
+		// Drop the health of a peer libp2p no longer holds, or the map would grow
+		// for the lifetime of the page — a front desk pairs with one person after
+		// another, so this is the normal case rather than the leak-shaped edge one.
+		for (const peerId of peerConnections.keys()) {
+			if (!peers.includes(peerId)) peerConnections.delete(peerId);
+		}
+
+		connectedPeersStore.set(peers);
+		publishPeerStates();
+	};
 
 	libp2p.addEventListener('connection:open', update);
 	libp2p.addEventListener('connection:close', update);
