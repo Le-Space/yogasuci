@@ -29,6 +29,7 @@
 	import { sharePayload } from '$lib/p2p/qr.js';
 	import { buildLink, readLink } from '$lib/p2p/invite.js';
 	import { iceMode, rtcConfiguration } from '$lib/p2p/libp2p-config.js';
+	import { setShortCodeEnabled, shortCodeEnabled } from '$lib/p2p/short-code.js';
 	import { createHandoff } from '$lib/p2p/handoff.js';
 	import { introduceToPeer, joinStore, joinStudioFromPeer } from '$lib/db/join.js';
 	import { studioStore } from '$lib/db/registry.js';
@@ -58,6 +59,16 @@
 	let copied = $state(false);
 	let scanning = $state(false);
 	let fromLink = $state(false);
+
+	/**
+	 * Whether this device hands out short codes — see p2p/short-code.js for what
+	 * that buys and what it costs.
+	 *
+	 * Starts false rather than reading the setting here: this route is prerendered,
+	 * so the initial value is computed in node where there is no storage. `onMount`
+	 * corrects it, which is also the only place it can be read honestly.
+	 */
+	let shortCode = $state(false);
 
 	/** @type {HTMLVideoElement | undefined} */
 	// Typed loosely on purpose: svelte-check has no element interface for
@@ -160,6 +171,8 @@
 	let handoff = null;
 
 	onMount(() => {
+		shortCode = shortCodeEnabled();
+
 		// Loaded in the browser only: this page renders on the server first, where
 		// `customElements` does not exist.
 		// Loaded here, applied in the effect below. The elements live behind
@@ -331,6 +344,29 @@
 			failure = error?.message ?? String(error);
 			step = 'failed';
 		}
+	}
+
+	/**
+	 * Turn short codes on or off, and put the choice on screen immediately.
+	 *
+	 * Rebuilding the invitation is the point rather than a nicety: without it the
+	 * box says one thing while the code beside it is still the other format, and
+	 * the only way to find out which one you are showing is to have somebody scan
+	 * it. The invitation being rebuilt does invalidate a link already shared — the
+	 * same cost `connect_refresh` has always had, and paid here knowingly because a
+	 * studio that just changed the format has not handed anything out yet.
+	 *
+	 * Not while a reply is on screen: an answer is in whatever format its offer
+	 * arrived in, so there is nothing to switch, and rebuilding would throw away a
+	 * reply the other device is waiting for.
+	 *
+	 * @param {boolean} enabled
+	 */
+	async function chooseShortCode(enabled) {
+		shortCode = enabled;
+		setShortCodeEnabled(enabled);
+
+		if (step === 'inviting') await refreshInvite();
 	}
 
 	/** Handle a payload that arrived by link, scan or paste — same code path. */
@@ -570,6 +606,28 @@
 		<p class="mt-3 font-mono text-xs break-all text-faint" data-testid="own-peer-id">
 			{$peerIdStore ?? '…'}
 		</p>
+
+		<!--
+			Behind "advanced" rather than beside the code, because a studio at a
+			counter should not be asked to choose a payload format to connect two
+			devices. Someone who has read why it exists will come looking here; nobody
+			else has to meet it. The hint says what it costs in the same breath as
+			what it buys - a box promising a faster scan without mentioning that every
+			second connection went silent under load would be a trap.
+		-->
+		<label class="mt-4 flex items-start gap-3 text-sm">
+			<input
+				type="checkbox"
+				data-testid="short-code"
+				checked={shortCode}
+				onchange={(event) => chooseShortCode(event.currentTarget.checked)}
+				class="mt-1 shrink-0"
+			/>
+			<span>
+				{m.connect_short_code()}
+				<span class="mt-1 block text-xs text-muted">{m.connect_short_code_hint()}</span>
+			</span>
+		</label>
 
 		{#if payload}
 			<label class="mt-4 block text-sm text-muted" for="payload">{m.connect_copy()}</label>

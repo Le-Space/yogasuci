@@ -20,6 +20,7 @@
 import { QRSession, parsePayload, QR_TYPE_OFFER } from '@le-space/libp2p-webrtc-qr';
 
 import { rtcConfiguration } from './libp2p-config.js';
+import { shortCodeEnabled } from './short-code.js';
 
 const ICE_GATHERING_TIMEOUT_MS = 15_000;
 
@@ -65,10 +66,19 @@ export function createSignalling(node) {
 	/**
 	 * Step 1 (offering device): make an offer to show.
 	 *
+	 * The format is decided per offer rather than once when the session is built.
+	 * A studio can turn short codes on with the connect screen already open, and
+	 * the next invitation has to be the format they just chose — so the setting is
+	 * read at the moment of the offer rather than captured above.
+	 *
+	 * Only this direction is a choice. Reading is unconditional in the package, so
+	 * a device with the setting off still accepts a short code from a device that
+	 * has it on, and the answer comes back in whatever format the offer arrived in.
+	 *
 	 * @returns {Promise<string>} the payload to display
 	 */
 	function createOffer() {
-		return session.createOffer();
+		return session.createOffer({ compact: shortCodeEnabled() });
 	}
 
 	/**

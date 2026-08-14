@@ -152,6 +152,24 @@ export async function openAdvanced(page) {
 }
 
 /**
+ * Turn short codes on, and wait until the invitation on screen is one.
+ *
+ * Ticking the box rebuilds the invitation, which means the payload field holds
+ * the old format for as long as ICE takes to gather again. Returning before that
+ * finished would hand the caller a v2 payload and call it a short code.
+ *
+ * @param {Page} page
+ */
+export async function enableShortCode(page) {
+	await openAdvanced(page);
+	await page.getByTestId('short-code').check();
+
+	await expect
+		.poll(async () => (await currentPayload(page)).startsWith('q3:'), { timeout: 90_000 })
+		.toBe(true);
+}
+
+/**
  * Run the full three-step handshake over copy & paste.
  *
  * This is the default for the bulk of the suite: it exercises the same
@@ -160,8 +178,11 @@ export async function openAdvanced(page) {
  *
  * @param {Page} offerer
  * @param {Page} answerer
+ * @param {{ shortCode?: boolean }} [options] have the offering device hand out a
+ *   compact (v3) payload. Only the offerer is asked: the answer comes back in
+ *   whatever format the offer arrived in, which is itself worth exercising.
  */
-export async function connectViaPaste(offerer, answerer) {
+export async function connectViaPaste(offerer, answerer, { shortCode = false } = {}) {
 	// Already-onboarded contexts pass straight through; a fresh one gets an
 	// identity here rather than failing at a form it did not expect.
 	await openConnect(offerer, 'offerer');
@@ -169,6 +190,8 @@ export async function connectViaPaste(offerer, answerer) {
 
 	await openAdvanced(offerer);
 	await openAdvanced(answerer);
+
+	if (shortCode) await enableShortCode(offerer);
 
 	// Capture what each field holds before acting, so the reads below can wait
 	// for a *new* value rather than any value.

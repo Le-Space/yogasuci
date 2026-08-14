@@ -64,6 +64,8 @@
 	"connect_share": "Code teilen",
 	"connect_share_invite": "Einladung teilen",
 	"connect_share_reply": "Antwort zurückschicken",
+	"connect_short_code": "Kurzer Code",
+	"connect_short_code_hint": "Ein Bild statt einer Bildfolge — am Tresen genügt ein Blick. Noch experimentell: unter Last blieb etwa jede zweite Verbindung stumm, verbunden, aber ohne dass Daten ankamen. Kurze Codes lesen könnt ihr immer, auch wenn das hier aus ist.",
 	"connect_status_connected": "Verbunden mit {peer}",
 	"connect_status_connecting": "Verbindung wird aufgebaut …",
 	"connect_status_failed": "Verbindung fehlgeschlagen: {reason}",

@@ -70,6 +70,34 @@ Er liegt bewusst nicht offen: Zwei sichtbare Wege nebeneinander führen zu der
 Frage, welche der beiden Zeichenketten denn nun die richtige ist — und genau die
 sollte niemand stellen müssen.
 
+## Erweitert: Kurzer Code
+
+Fällt euch auf, dass der QR-Code nicht stillsteht, sondern durch mehrere Bilder
+läuft? Das ist Absicht: Die Einladung ist länger, als in ein einzelnes Bild
+passt, also wird sie in eine Bildfolge zerlegt. Zu scannen ist das kein Problem —
+aber das Telefon muss einen Moment lang ruhig gehalten werden.
+
+Unter **Erweitert** gibt es dafür den Schalter **Kurzer Code**. Damit wird
+dasselbe verschickt, nur dichter gepackt: rund ein Viertel der Zeichen, und
+daraus wird ein einziges stehendes Bild. An der Theke ist das ein Blick statt
+einer kurzen Choreografie.
+
+Er ist trotzdem aus, solange ihn niemand einschaltet, und der Grund ist nicht,
+dass er unfertig wäre. In Messungen des zugrundeliegenden Pakets blieb unter Last
+etwa jede zweite so aufgebaute Verbindung stumm — verbunden, ohne Fehlermeldung,
+aber es kam nichts an. Für ein Kassenbuch ist das der schlechteste denkbare
+Fehler: Zwei Geräte sehen verbunden aus, während die auf dem einen verkauften
+Karten das andere nie erreichen. In unseren eigenen Läufen ist das bisher nicht
+aufgetreten; wir halten den Schalter aus, bis wir mehr als „bisher nicht" sagen
+können.
+
+**Lesen könnt ihr kurze Codes immer.** Der Schalter ändert nur, was _dieses_
+Gerät ausgibt. Ein Gerät mit dem Schalter aus scannt problemlos den kurzen Code
+eines Geräts, das ihn anhat, und antwortet im selben Format.
+
+Wenn eine Verbindung damit still bleibt: Schalter aus, **Einladung erneuern**,
+neu verbinden. Verloren geht dabei nichts.
+
 ## Wenn es nicht klappt
 
 **Der QR-Code lässt sich nicht scannen.** Displayhelligkeit hochdrehen, Abstand
