@@ -5,7 +5,7 @@
 // one date struck) and five packages; bilingual; and all of it survives a
 // reload.
 
-import { test, expect } from './fixtures.js';
+import { expect, openCourseForm, openPackageForm, test } from './fixtures.js';
 
 const READY = { timeout: 90_000 };
 
@@ -57,6 +57,7 @@ test.describe('registry and programme', () => {
 		await expect(alice.getByTestId('course-item')).toHaveCount(3);
 
 		// --- one series, twice weekly, five weeks, one date struck ---------
+		await openCourseForm(alice);
 		await alice.getByTestId('course-mode').selectOption('series');
 		await alice.getByTestId('course-id').fill('anfaenger-h26');
 		await alice.getByTestId('course-location').selectOption('location:altstadt');
@@ -229,6 +230,7 @@ async function addLocation(page, { id, de, en }) {
  * @param {{ id: string, location: string, de: string, en: string, weekday: string }} course
  */
 async function addRecurringCourse(page, { id, location, de, en, weekday }) {
+	await openCourseForm(page);
 	await page.getByTestId('course-mode').selectOption('recurring');
 	await page.getByTestId('course-id').fill(id);
 	await page.getByTestId('course-location').selectOption(location);
@@ -245,6 +247,7 @@ async function addRecurringCourse(page, { id, location, de, en, weekday }) {
  * @param {{ id: string, de: string, kind: string, units: string }} pkg
  */
 async function addPackage(page, { id, de, kind, units }) {
+	await openPackageForm(page);
 	await page.getByTestId('package-id').fill(id);
 	await page.getByTestId('package-name-de').fill(de);
 	await page.getByTestId('package-kind').selectOption(kind);

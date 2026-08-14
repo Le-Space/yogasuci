@@ -7,6 +7,7 @@
 	 * the course. That is why the sessions are stored concretely and the
 	 * validity window is derived from them rather than typed in.
 	 */
+	import Modal from '$lib/components/Modal.svelte';
 	import SetupImport from '$lib/components/SetupImport.svelte';
 	import StudioGate from '$lib/components/StudioGate.svelte';
 	import { locationsStore } from '$lib/db/registry.js';
@@ -51,6 +52,8 @@
 	];
 
 	let error = $state('');
+	let courseFormOpen = $state(false);
+	let packageFormOpen = $state(false);
 
 	// The owner, or a device the owner approved. Everyone else replicates the
 	// programme read-only: the ACL refuses their writes, and hiding the forms is
@@ -216,6 +219,7 @@
 			}
 
 			course = { ...course, id: '', titleDe: '', titleEn: '' };
+			courseFormOpen = false;
 			sessions = [];
 		});
 	}
@@ -237,6 +241,7 @@
 			});
 
 			pkg = { ...pkg, id: '', nameDe: '', nameEn: '' };
+			packageFormOpen = false;
 		});
 	}
 
@@ -394,228 +399,239 @@
 		</ul>
 
 		{#if canEdit}
-			<form class="mt-4 grid max-w-lg gap-3" onsubmit={submitCourse}>
-				<label class="grid gap-1 text-sm">
-					{m.course_mode()}
-					<select
-						data-testid="course-mode"
-						bind:value={course.mode}
-						class="rounded-control border p-2"
-					>
-						<option value="recurring">{m.course_mode_recurring()}</option>
-						<option value="series">{m.course_mode_series()}</option>
-					</select>
-				</label>
+			<button
+				type="button"
+				data-testid="course-new"
+				onclick={() => (courseFormOpen = true)}
+				class="mt-4 rounded-control bg-accent px-4 py-2 font-medium text-accent-contrast"
+			>
+				{m.course_new()}
+			</button>
 
-				<label class="grid gap-1 text-sm">
-					{m.course_id()}
-					<input
-						data-testid="course-id"
-						bind:value={course.id}
-						required
-						pattern="[a-z0-9\-]+"
-						class="rounded-control border p-2"
-					/>
-				</label>
-
-				<label class="grid gap-1 text-sm">
-					{m.course_location()}
-					<select
-						data-testid="course-location"
-						bind:value={course.locationId}
-						required
-						class="rounded-control border p-2"
-					>
-						<option value="" disabled></option>
-						{#each $locationsStore.filter((entry) => entry.active) as entry (entry._id)}
-							<option value={entry._id}>{localized(entry.name, getLocale())}</option>
-						{/each}
-					</select>
-				</label>
-
-				<label class="grid gap-1 text-sm">
-					{m.course_title_de()}
-					<input
-						data-testid="course-title-de"
-						bind:value={course.titleDe}
-						required
-						class="rounded-control border p-2"
-					/>
-				</label>
-				<label class="grid gap-1 text-sm">
-					{m.course_title_en()}
-					<input
-						data-testid="course-title-en"
-						bind:value={course.titleEn}
-						class="rounded-control border p-2"
-					/>
-				</label>
-
-				<div class="grid grid-cols-2 gap-3">
+			<Modal bind:open={courseFormOpen} title={m.course_new()} testid="course-modal">
+				<form class="grid gap-3" onsubmit={submitCourse}>
 					<label class="grid gap-1 text-sm">
-						{m.course_time()}
-						<input
-							type="time"
-							data-testid="course-time"
-							bind:value={course.time}
+						{m.course_mode()}
+						<select
+							data-testid="course-mode"
+							bind:value={course.mode}
 							class="rounded-control border p-2"
-						/>
+						>
+							<option value="recurring">{m.course_mode_recurring()}</option>
+							<option value="series">{m.course_mode_series()}</option>
+						</select>
 					</label>
+
 					<label class="grid gap-1 text-sm">
-						{m.course_duration()}
+						{m.course_id()}
 						<input
-							type="number"
-							min="15"
-							data-testid="course-duration"
-							bind:value={course.durationMin}
-							class="rounded-control border p-2"
-						/>
-					</label>
-					<label class="grid gap-1 text-sm">
-						{m.course_capacity()}
-						<input
-							type="number"
-							min="1"
-							data-testid="course-capacity"
-							bind:value={course.capacity}
+							data-testid="course-id"
+							bind:value={course.id}
+							required
+							pattern="[a-z0-9\-]+"
 							class="rounded-control border p-2"
 						/>
 					</label>
 
-					{#if course.mode === 'recurring'}
+					<label class="grid gap-1 text-sm">
+						{m.course_location()}
+						<select
+							data-testid="course-location"
+							bind:value={course.locationId}
+							required
+							class="rounded-control border p-2"
+						>
+							<option value="" disabled></option>
+							{#each $locationsStore.filter((entry) => entry.active) as entry (entry._id)}
+								<option value={entry._id}>{localized(entry.name, getLocale())}</option>
+							{/each}
+						</select>
+					</label>
+
+					<label class="grid gap-1 text-sm">
+						{m.course_title_de()}
+						<input
+							data-testid="course-title-de"
+							bind:value={course.titleDe}
+							required
+							class="rounded-control border p-2"
+						/>
+					</label>
+					<label class="grid gap-1 text-sm">
+						{m.course_title_en()}
+						<input
+							data-testid="course-title-en"
+							bind:value={course.titleEn}
+							class="rounded-control border p-2"
+						/>
+					</label>
+
+					<div class="grid grid-cols-2 gap-3">
 						<label class="grid gap-1 text-sm">
-							{m.course_weekday()}
-							<select
-								data-testid="course-weekday"
-								bind:value={course.weekday}
-								class="rounded-control border p-2"
-							>
-								{#each WEEKDAYS as day (day.value)}
-									<option value={day.value}>{day.label()}</option>
-								{/each}
-							</select>
-						</label>
-						<label class="grid gap-1 text-sm">
-							{m.course_valid_from()}
+							{m.course_time()}
 							<input
-								type="date"
-								data-testid="course-valid-from"
-								bind:value={course.validFrom}
+								type="time"
+								data-testid="course-time"
+								bind:value={course.time}
 								class="rounded-control border p-2"
 							/>
 						</label>
 						<label class="grid gap-1 text-sm">
-							{m.course_valid_until()}
-							<input
-								type="date"
-								data-testid="course-valid-until"
-								bind:value={course.validUntil}
-								class="rounded-control border p-2"
-							/>
-						</label>
-					{:else}
-						<label class="grid gap-1 text-sm">
-							{m.course_price()}
+							{m.course_duration()}
 							<input
 								type="number"
-								step="0.01"
-								min="0"
-								data-testid="course-price"
-								bind:value={course.priceEUR}
+								min="15"
+								data-testid="course-duration"
+								bind:value={course.durationMin}
 								class="rounded-control border p-2"
 							/>
 						</label>
-					{/if}
-				</div>
+						<label class="grid gap-1 text-sm">
+							{m.course_capacity()}
+							<input
+								type="number"
+								min="1"
+								data-testid="course-capacity"
+								bind:value={course.capacity}
+								class="rounded-control border p-2"
+							/>
+						</label>
 
-				{#if course.mode === 'series'}
-					<fieldset class="grid gap-3 rounded-control border border-border p-3">
-						<legend class="px-1 text-sm text-muted">{m.series_sessions()}</legend>
-
-						<div class="grid grid-cols-2 gap-3">
+						{#if course.mode === 'recurring'}
 							<label class="grid gap-1 text-sm">
-								{m.series_start()}
+								{m.course_weekday()}
+								<select
+									data-testid="course-weekday"
+									bind:value={course.weekday}
+									class="rounded-control border p-2"
+								>
+									{#each WEEKDAYS as day (day.value)}
+										<option value={day.value}>{day.label()}</option>
+									{/each}
+								</select>
+							</label>
+							<label class="grid gap-1 text-sm">
+								{m.course_valid_from()}
 								<input
 									type="date"
-									data-testid="series-start"
-									bind:value={series.startDate}
+									data-testid="course-valid-from"
+									bind:value={course.validFrom}
 									class="rounded-control border p-2"
 								/>
 							</label>
 							<label class="grid gap-1 text-sm">
-								{m.series_weeks()}
+								{m.course_valid_until()}
 								<input
-									type="number"
-									min="1"
-									data-testid="series-weeks"
-									bind:value={series.weeks}
+									type="date"
+									data-testid="course-valid-until"
+									bind:value={course.validUntil}
 									class="rounded-control border p-2"
 								/>
 							</label>
-						</div>
+						{:else}
+							<label class="grid gap-1 text-sm">
+								{m.course_price()}
+								<input
+									type="number"
+									step="0.01"
+									min="0"
+									data-testid="course-price"
+									bind:value={course.priceEUR}
+									class="rounded-control border p-2"
+								/>
+							</label>
+						{/if}
+					</div>
 
-						<div class="grid gap-1 text-sm">
-							<span>{m.series_weekdays()}</span>
-							<div class="flex flex-wrap gap-2">
-								{#each WEEKDAYS as day (day.value)}
-									<button
-										type="button"
-										data-testid={`series-weekday-${day.value}`}
-										aria-pressed={series.weekdays.includes(day.value)}
-										onclick={() => toggleWeekday(day.value)}
-										class="rounded-control border border-border px-2 py-1 text-sm
-										{series.weekdays.includes(day.value) ? 'bg-surface-raised text-text' : 'text-faint'}"
-									>
-										{day.label()}
-									</button>
-								{/each}
+					{#if course.mode === 'series'}
+						<fieldset class="grid gap-3 rounded-control border border-border p-3">
+							<legend class="px-1 text-sm text-muted">{m.series_sessions()}</legend>
+
+							<div class="grid grid-cols-2 gap-3">
+								<label class="grid gap-1 text-sm">
+									{m.series_start()}
+									<input
+										type="date"
+										data-testid="series-start"
+										bind:value={series.startDate}
+										class="rounded-control border p-2"
+									/>
+								</label>
+								<label class="grid gap-1 text-sm">
+									{m.series_weeks()}
+									<input
+										type="number"
+										min="1"
+										data-testid="series-weeks"
+										bind:value={series.weeks}
+										class="rounded-control border p-2"
+									/>
+								</label>
 							</div>
-						</div>
 
-						<button
-							type="button"
-							data-testid="series-generate"
-							onclick={propose}
-							class="justify-self-start rounded-control border border-border px-3 py-1.5 text-sm"
-						>
-							{m.series_generate()}
-						</button>
+							<div class="grid gap-1 text-sm">
+								<span>{m.series_weekdays()}</span>
+								<div class="flex flex-wrap gap-2">
+									{#each WEEKDAYS as day (day.value)}
+										<button
+											type="button"
+											data-testid={`series-weekday-${day.value}`}
+											aria-pressed={series.weekdays.includes(day.value)}
+											onclick={() => toggleWeekday(day.value)}
+											class="rounded-control border border-border px-2 py-1 text-sm
+										{series.weekdays.includes(day.value) ? 'bg-surface-raised text-text' : 'text-faint'}"
+										>
+											{day.label()}
+										</button>
+									{/each}
+								</div>
+							</div>
 
-						<ul class="grid gap-1" data-testid="series-session-list">
-							{#each sessions as session (session.date)}
-								<li class="flex items-baseline gap-3 text-sm" data-testid="series-session">
-									<span class="flex-1 font-mono">{session.date}</span>
-									<button
-										type="button"
-										data-testid={`series-drop-${session.date}`}
-										onclick={() => dropSession(session.date)}
-										class="rounded-control border border-border px-2 py-0.5"
-									>
-										{m.series_drop_session()}
-									</button>
-								</li>
-							{/each}
-						</ul>
+							<button
+								type="button"
+								data-testid="series-generate"
+								onclick={propose}
+								class="justify-self-start rounded-control border border-border px-3 py-1.5 text-sm"
+							>
+								{m.series_generate()}
+							</button>
 
-						<label class="flex items-center gap-2 text-sm">
-							<input
-								type="checkbox"
-								data-testid="course-allow-dropin"
-								bind:checked={course.allowDropIn}
-							/>
-							{m.course_allow_dropin()}
-						</label>
-					</fieldset>
-				{/if}
+							<ul class="grid gap-1" data-testid="series-session-list">
+								{#each sessions as session (session.date)}
+									<li class="flex items-baseline gap-3 text-sm" data-testid="series-session">
+										<span class="flex-1 font-mono">{session.date}</span>
+										<button
+											type="button"
+											data-testid={`series-drop-${session.date}`}
+											onclick={() => dropSession(session.date)}
+											class="rounded-control border border-border px-2 py-0.5"
+										>
+											{m.series_drop_session()}
+										</button>
+									</li>
+								{/each}
+							</ul>
 
-				<button
-					type="submit"
-					data-testid="course-add"
-					class="justify-self-start rounded-control bg-accent px-4 py-2 font-medium text-accent-contrast"
-				>
-					{m.course_add()}
-				</button>
-			</form>
+							<label class="flex items-center gap-2 text-sm">
+								<input
+									type="checkbox"
+									data-testid="course-allow-dropin"
+									bind:checked={course.allowDropIn}
+								/>
+								{m.course_allow_dropin()}
+							</label>
+						</fieldset>
+					{/if}
+
+					<button
+						type="submit"
+						data-testid="course-add"
+						class="justify-self-start rounded-control bg-accent px-4 py-2 font-medium text-accent-contrast"
+					>
+						{m.course_add()}
+					</button>
+				</form>
+			</Modal>
 		{/if}
 	</section>
 
@@ -657,100 +673,111 @@
 		</ul>
 
 		{#if canEdit}
-			<form class="mt-4 grid max-w-lg gap-3" onsubmit={submitPackage}>
-				<label class="grid gap-1 text-sm">
-					{m.package_id()}
-					<input
-						data-testid="package-id"
-						bind:value={pkg.id}
-						required
-						pattern="[a-z0-9\-]+"
-						class="rounded-control border p-2"
-					/>
-				</label>
-				<label class="grid gap-1 text-sm">
-					{m.package_name_de()}
-					<input
-						data-testid="package-name-de"
-						bind:value={pkg.nameDe}
-						required
-						class="rounded-control border p-2"
-					/>
-				</label>
-				<label class="grid gap-1 text-sm">
-					{m.package_name_en()}
-					<input
-						data-testid="package-name-en"
-						bind:value={pkg.nameEn}
-						class="rounded-control border p-2"
-					/>
-				</label>
+			<button
+				type="button"
+				data-testid="package-new"
+				onclick={() => (packageFormOpen = true)}
+				class="mt-4 rounded-control bg-accent px-4 py-2 font-medium text-accent-contrast"
+			>
+				{m.package_new()}
+			</button>
 
-				<div class="grid grid-cols-2 gap-3">
+			<Modal bind:open={packageFormOpen} title={m.package_new()} testid="package-modal">
+				<form class="grid gap-3" onsubmit={submitPackage}>
 					<label class="grid gap-1 text-sm">
-						{m.package_kind()}
-						<select
-							data-testid="package-kind"
-							bind:value={pkg.kind}
-							class="rounded-control border p-2"
-						>
-							{#each PACKAGE_KINDS as kind (kind.value)}
-								<option value={kind.value}>{kind.label()}</option>
-							{/each}
-						</select>
-					</label>
-					<label class="grid gap-1 text-sm">
-						{m.package_price()}
+						{m.package_id()}
 						<input
-							type="number"
-							step="0.01"
-							min="0"
-							data-testid="package-price"
-							bind:value={pkg.priceEUR}
+							data-testid="package-id"
+							bind:value={pkg.id}
+							required
+							pattern="[a-z0-9\-]+"
 							class="rounded-control border p-2"
 						/>
 					</label>
 					<label class="grid gap-1 text-sm">
-						{m.package_units()}
+						{m.package_name_de()}
 						<input
-							type="number"
-							min="1"
-							data-testid="package-units"
-							bind:value={pkg.units}
+							data-testid="package-name-de"
+							bind:value={pkg.nameDe}
+							required
 							class="rounded-control border p-2"
 						/>
 					</label>
 					<label class="grid gap-1 text-sm">
-						{m.package_validity_days()}
+						{m.package_name_en()}
 						<input
-							type="number"
-							min="1"
-							data-testid="package-validity-days"
-							bind:value={pkg.validityDays}
+							data-testid="package-name-en"
+							bind:value={pkg.nameEn}
 							class="rounded-control border p-2"
 						/>
 					</label>
-					<label class="grid gap-1 text-sm">
-						{m.package_validity_start()}
-						<select
-							data-testid="package-validity-start"
-							bind:value={pkg.validityStart}
-							class="rounded-control border p-2"
-						>
-							<option value="issue">{m.package_validity_issue()}</option>
-							<option value="firstRedeem">{m.package_validity_first()}</option>
-						</select>
-					</label>
-				</div>
 
-				<button
-					type="submit"
-					data-testid="package-add"
-					class="justify-self-start rounded-control border border-border px-4 py-2"
-				>
-					{m.package_add()}
-				</button>
-			</form>
+					<div class="grid grid-cols-2 gap-3">
+						<label class="grid gap-1 text-sm">
+							{m.package_kind()}
+							<select
+								data-testid="package-kind"
+								bind:value={pkg.kind}
+								class="rounded-control border p-2"
+							>
+								{#each PACKAGE_KINDS as kind (kind.value)}
+									<option value={kind.value}>{kind.label()}</option>
+								{/each}
+							</select>
+						</label>
+						<label class="grid gap-1 text-sm">
+							{m.package_price()}
+							<input
+								type="number"
+								step="0.01"
+								min="0"
+								data-testid="package-price"
+								bind:value={pkg.priceEUR}
+								class="rounded-control border p-2"
+							/>
+						</label>
+						<label class="grid gap-1 text-sm">
+							{m.package_units()}
+							<input
+								type="number"
+								min="1"
+								data-testid="package-units"
+								bind:value={pkg.units}
+								class="rounded-control border p-2"
+							/>
+						</label>
+						<label class="grid gap-1 text-sm">
+							{m.package_validity_days()}
+							<input
+								type="number"
+								min="1"
+								data-testid="package-validity-days"
+								bind:value={pkg.validityDays}
+								class="rounded-control border p-2"
+							/>
+						</label>
+						<label class="grid gap-1 text-sm">
+							{m.package_validity_start()}
+							<select
+								data-testid="package-validity-start"
+								bind:value={pkg.validityStart}
+								class="rounded-control border p-2"
+							>
+								<option value="issue">{m.package_validity_issue()}</option>
+								<option value="firstRedeem">{m.package_validity_first()}</option>
+							</select>
+						</label>
+					</div>
+
+					<button
+						type="submit"
+						data-testid="package-add"
+						class="justify-self-start rounded-control border border-border px-4 py-2"
+					>
+						{m.package_add()}
+					</button>
+				</form>
+			</Modal>
 		{/if}
 	</section>
 

@@ -16,7 +16,14 @@
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
-import { test, expect, connectViaPaste, onboard } from './fixtures.js';
+import {
+	connectViaPaste,
+	expect,
+	onboard,
+	openCourseForm,
+	openPackageForm,
+	test
+} from './fixtures.js';
 
 const READY = { timeout: 90_000 };
 const REPLICATED = { timeout: 90_000 };
@@ -83,6 +90,7 @@ test('the screens the handbook talks about', async ({ alice, bob, carol }) => {
 	// --- Programme and prices ----------------------------------------------
 	await alice.getByTestId('nav-program').click();
 	await expect(alice.getByTestId('studio-ready')).toBeVisible(READY);
+	await openPackageForm(alice);
 	await alice.getByTestId('package-id').fill('zehner');
 	await alice.getByTestId('package-name-de').fill('10er-Karte');
 	await alice.getByTestId('package-name-en').fill('10-class pass');
@@ -91,6 +99,8 @@ test('the screens the handbook talks about', async ({ alice, bob, carol }) => {
 	await alice.getByTestId('package-validity-days').fill('30');
 	await alice.getByTestId('package-add').click();
 	await expect(alice.locator('[data-package-id="package:zehner"]')).toBeVisible();
+
+	await openCourseForm(alice);
 
 	await alice.getByTestId('course-mode').selectOption('recurring');
 	await alice.getByTestId('course-id').fill('vinyasa-mi-18');

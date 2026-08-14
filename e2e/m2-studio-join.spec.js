@@ -5,7 +5,13 @@
 // connection the QR handshake built, with no relay and nothing else exchanged
 // by hand.
 
-import { test, expect, connectViaPaste, onboard as onboardVia } from './fixtures.js';
+import {
+	connectViaPaste,
+	expect,
+	onboard as onboardVia,
+	openCourseForm,
+	test
+} from './fixtures.js';
 
 const READY = { timeout: 90_000 };
 const REPLICATED = { timeout: 90_000 };
@@ -150,6 +156,7 @@ async function addLocation(page, id, name) {
  * @param {string} title
  */
 async function addCourse(page, id, title) {
+	await openCourseForm(page);
 	await page.getByTestId('course-mode').selectOption('recurring');
 	await page.getByTestId('course-id').fill(id);
 	await page.getByTestId('course-location').selectOption('location:altstadt');
