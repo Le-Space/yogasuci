@@ -50,6 +50,14 @@ async function shoot(page, name) {
 		for (const node of clocks) {
 			node.textContent = node.textContent?.replace(/\d[\d./:, ]{6,}/, '—') ?? '';
 		}
+
+		// The build stamp is the same problem in a harder form: every part of it
+		// moves — version, commit and time — so there is nothing to substitute
+		// within it. Frozen whole. It sits in the footer, below the fold on most
+		// screens today, which is exactly the kind of thing that stops being true
+		// after a layout change and then puts a diff in twenty files.
+		const stamp = document.querySelector('[data-testid="build-stamp"]');
+		if (stamp) stamp.textContent = 'v0.0.0 · 0000000 · —';
 	});
 	await page.screenshot({ path: `${OUT}${name}.png` });
 }
