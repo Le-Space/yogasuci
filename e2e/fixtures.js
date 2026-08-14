@@ -178,11 +178,22 @@ export async function enableShortCode(page) {
  *
  * @param {Page} offerer
  * @param {Page} answerer
- * @param {{ shortCode?: boolean }} [options] have the offering device hand out a
+ * @param {object} [options]
+ * @param {boolean} [options.shortCode] have the offering device hand out a
  *   compact (v3) payload. Only the offerer is asked: the answer comes back in
  *   whatever format the offer arrived in, which is itself worth exercising.
+ * @param {number} [options.connectTimeout] how long the connection may take.
+ *   Sixty seconds is the gate for the whole suite and should stay there — it is
+ *   what catches a handshake that got slower. Raised only by a caller that knows
+ *   why its own case is slower: a hub that is already replicating to two devices
+ *   while a third pairs is doing genuinely more work, and on a two-core runner
+ *   that showed up as 15 s, 14 s, then over 60 s for the third.
  */
-export async function connectViaPaste(offerer, answerer, { shortCode = false } = {}) {
+export async function connectViaPaste(
+	offerer,
+	answerer,
+	{ shortCode = false, connectTimeout = 60_000 } = {}
+) {
 	// Already-onboarded contexts pass straight through; a fresh one gets an
 	// identity here rather than failing at a form it did not expect.
 	await openConnect(offerer, 'offerer');
@@ -209,12 +220,12 @@ export async function connectViaPaste(offerer, answerer, { shortCode = false } =
 	await offerer.getByTestId('submit-inbound').click();
 
 	await expect(offerer.getByTestId('connection-status')).toHaveAttribute('data-step', 'connected', {
-		timeout: 60_000
+		timeout: connectTimeout
 	});
 	await expect(answerer.getByTestId('connection-status')).toHaveAttribute(
 		'data-step',
 		'connected',
-		{ timeout: 60_000 }
+		{ timeout: connectTimeout }
 	);
 }
 

@@ -99,7 +99,13 @@ test.describe('a front desk with more than one device on it', () => {
 		const ids = [];
 
 		for (const leaf of leaves) {
-			await connectViaPaste(alice, leaf);
+			// Three minutes rather than the suite's sixty seconds, and the number is
+			// a measurement rather than padding. On CI these took 15 s, 14 s, and
+			// then over 60 s for the third: the hub is replicating to two devices
+			// while a third pairs, which is genuinely more work, and the runner has
+			// two cores. Raising it here keeps the sixty-second gate on every other
+			// handshake in the suite, where it is what catches a real slowdown.
+			await connectViaPaste(alice, leaf, { connectTimeout: 180_000 });
 			ids.push(await leaf.getByTestId('own-peer-id').innerText());
 		}
 
