@@ -5,6 +5,8 @@
 	import LanguageSwitch from '$lib/components/LanguageSwitch.svelte';
 	import OmMark from '$lib/components/OmMark.svelte';
 	import SyncStatus from '$lib/components/SyncStatus.svelte';
+	import { buildStamp } from '$lib/build-info.js';
+	import { getLocale } from '$lib/paraglide/runtime.js';
 	import { canEditProgram } from '$lib/db/join.js';
 	import { devicesStore, studioStore } from '$lib/db/registry.js';
 	import * as m from '$lib/paraglide/messages.js';
@@ -135,8 +137,27 @@
 		footer does and a start-page link does not.
 	-->
 	<footer class="border-t border-border">
-		<div class="mx-auto max-w-4xl px-4 py-6 text-sm text-muted">
+		<div
+			class="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-6 text-sm text-muted"
+		>
 			<a href={resolve('/legal')} data-testid="nav-legal" class="underline">{m.nav_legal()}</a>
+
+			<!--
+				Which build this device is running.
+
+				There is no server to ask and no way to push an update: a device runs
+				whatever it last installed, and a PWA can sit on a cached build for
+				weeks. When a studio reports that something does not arrive, the first
+				useful question is which build each device is on — and until this line
+				existed, nobody could answer it, not even the person holding the device.
+
+				In the footer because it is reference rather than news: nobody needs it
+				until they need it, and then they need it on whatever screen they happen
+				to be looking at.
+			-->
+			<span class="font-mono text-xs" data-testid="build-stamp" title={m.build_stamp_title()}>
+				{buildStamp({ locale: getLocale() })}
+			</span>
 		</div>
 	</footer>
 </div>

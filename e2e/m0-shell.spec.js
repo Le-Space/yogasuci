@@ -110,6 +110,26 @@ test.describe('app shell', () => {
 		await expect(links.first()).toHaveAttribute('href', 'https://le-space.de');
 	});
 
+	test('says which build it is, before anyone has an identity', async ({ alice }) => {
+		// There is no server to ask which version a studio runs, and no way to push
+		// one: a device runs whatever it last installed, and a PWA can sit on a
+		// cached build for weeks. When something does not arrive, the first useful
+		// question is which build each device is on.
+		//
+		// Alongside the legal link and for the same reason — on every page, and
+		// reachable by somebody who never creates a passkey. A person reporting a
+		// problem should not have to get past onboarding to read it.
+		await alice.goto('/program/?ice=host');
+		await expect(alice.getByTestId('onboarding')).toBeVisible({ timeout: 90_000 });
+
+		// Asserted as three real parts, because the way this fails is quietly: an
+		// undefined replacement renders the literal word, and "vundefined" in a
+		// footer looks enough like a version to be scrolled past.
+		await expect(alice.getByTestId('build-stamp')).toHaveText(
+			/^v\d+\.\d+\.\d+ · [0-9a-f]{7,40} · .+\d.+$/
+		);
+	});
+
 	// Language follows the device before anything else, so the locale is set on
 	// the context rather than assumed. Both directions are checked: a German
 	// browser must not land in English, and an English one must not land in

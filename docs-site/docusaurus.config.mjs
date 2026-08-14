@@ -9,6 +9,44 @@
 // English is a full second locale rather than a fallback.
 
 import { themes } from 'prism-react-renderer';
+import { execSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+
+// Which build of the handbook this is.
+//
+// The same three facts the app puts in its own footer, and for the same reason:
+// the handbook is versioned by nothing except the moment it was published, so a
+// studio reading a page that contradicts their screen has no way to tell which
+// of the two is behind. Read from the *app's* package.json rather than this
+// site's own, because they ship from one repository and one version between them
+// is the truth.
+const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+
+function currentCommit() {
+	// CI checks out a detached HEAD; GitHub hands the SHA over directly, which
+	// describes what triggered the build rather than the checkout.
+	if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA.slice(0, 7);
+
+	try {
+		return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+			.toString()
+			.trim();
+	} catch {
+		// A build from a tarball with no repository. One fact fewer, not a failure.
+		return '';
+	}
+}
+
+// UTC, unlike the app's footer. That one is read on the device it describes and
+// is about "did this thing update"; this is one published page read from
+// everywhere, so a fixed zone is the only reading everyone shares.
+const buildStamp = [
+	`v${pkg.version}`,
+	currentCommit(),
+	`${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`
+]
+	.filter(Boolean)
+	.join(' · ');
 
 /** @type {import('@docusaurus/types').Config} */
 export default {
@@ -90,7 +128,7 @@ export default {
 					]
 				}
 			],
-			copyright: 'Le-Space · Apache-2.0 OR MIT'
+			copyright: `Le-Space · Apache-2.0 OR MIT<br/><small>${buildStamp}</small>`
 		},
 		prism: { theme: themes.github, darkTheme: themes.dracula }
 	}
