@@ -24,6 +24,7 @@
 	"bookings_mine": "Meine Buchungen",
 	"bookings_mine_none": "Noch nichts gebucht.",
 	"bookings_title": "Buchungen",
+	"build_stamp_title": "Version, Commit und Zeitpunkt dieses Builds. Nennt sie, wenn ihr ein Problem meldet.",
 	"checkin_course": "Kurs",
 	"checkin_date": "Datum",
 	"checkin_done": "Entwertet — Restguthaben: {balance}",

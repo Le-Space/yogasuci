@@ -19,13 +19,22 @@ export default [
 	...svelte.configs.prettier,
 	{
 		languageOptions: {
-			globals: { ...globals.browser, ...globals.node }
+			// The three vite `define` replacements (vite.config.js). Declared here
+			// rather than only for Svelte files: the module that reads them is plain
+			// JavaScript, so that they were listed only under the Svelte block was a
+			// rule about where they *happened* to be used, not about what they are.
+			globals: {
+				...globals.browser,
+				...globals.node,
+				__APP_VERSION__: 'readonly',
+				__BUILD_DATE__: 'readonly',
+				__COMMIT__: 'readonly'
+			}
 		}
 	},
 	{
 		files: ['**/*.svelte', '**/*.svelte.js'],
 		languageOptions: {
-			globals: { ...globals.browser, ...globals.node, __APP_VERSION__: 'readonly' },
 			parserOptions: { svelteConfig }
 		}
 	},
