@@ -25,7 +25,14 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { base } from '$app/paths';
 	import StudioGate from '$lib/components/StudioGate.svelte';
-	import { connectedPeersStore, hangUp, peerIdStore, signallingStore } from '$lib/p2p/node.js';
+	import {
+		connectedPeersStore,
+		disconnectPeer,
+		hangUp,
+		peerIdStore,
+		peerStatesStore,
+		signallingStore
+	} from '$lib/p2p/node.js';
 	import { sharePayload } from '$lib/p2p/qr.js';
 	import { buildLink, readLink } from '$lib/p2p/invite.js';
 	import { iceMode, rtcConfiguration } from '$lib/p2p/libp2p-config.js';
@@ -77,6 +84,8 @@
 	/** @type {any} */
 	let scanner = $state(null);
 	let status = $state();
+	/** @type {any} */
+	let peerList = $state(null);
 	let elementsReady = $state(false);
 
 	/**
@@ -151,6 +160,59 @@
 			};
 		}
 	}
+
+	/**
+	 * Who is connected, and how that connection is doing.
+	 *
+	 * The membership comes from libp2p, because that is what decides whether this
+	 * device can exchange anything with that one. The health comes from WebRTC
+	 * underneath it, and falls back to `connected` rather than to nothing: an
+	 * inbound peer whose handshake this page never saw is genuinely connected, and
+	 * a row reading "connecting…" forever would be a lie about a working device.
+	 */
+	let devices = $derived(
+		$connectedPeersStore.map((peerId) => ({
+			peerId,
+			state: $peerStatesStore[peerId] ?? 'connected'
+		}))
+	);
+
+	/**
+	 * A property, not an attribute: `peers` is an array, and `<qr-peers>` is only
+	 * defined once the dynamic import above has resolved. Assigning through
+	 * `bind:this` is what the rest of this screen does with the elements for the
+	 * same reason.
+	 */
+	$effect(() => {
+		if (peerList) peerList.peers = devices;
+	});
+
+	/**
+	 * The peer list gets its own effect, because it is not in the document when
+	 * the one above runs.
+	 *
+	 * `<qr-peers>` only renders once somebody is connected, which is minutes after
+	 * the screen mounted. Translating it up there would set `strings` on nothing —
+	 * the same mistake that once left the readiness panel English *and* unprobed.
+	 * Reading `peerList` here is what makes this re-run when the element appears.
+	 */
+	$effect(() => {
+		if (!elementsReady || !peerList) return;
+
+		peerList.strings = {
+			connected: m.qr_peers_connected(),
+			connecting: m.qr_peers_connecting(),
+			new: m.qr_peers_connecting(),
+			disconnected: m.qr_peers_disconnected(),
+			failed: m.qr_peers_failed(),
+			closed: m.qr_peers_closed(),
+			disconnect: m.qr_peers_disconnect(),
+			// A function, not a template: the package does not fix our word order
+			// onto every consumer, and this one carries a value.
+			disconnectFrom: (/** @type {{ peerId: string }} */ { peerId }) =>
+				m.qr_peers_disconnect_from({ peerId })
+		};
+	});
 
 	// STUN turned off is a setting somebody chose, not a fault to report - #26 is
 	// explicit that reporting a choice as a failure is worse than saying nothing.
@@ -488,8 +550,12 @@
 
 	<p class="mt-2 text-sm" data-testid="connection-status" data-step={step}>
 		{#if step === 'connected'}
-			<span class="break-all text-success">
-				{m.connect_status_connected({ peer: $connectedPeersStore[0] ?? '' })}
+			<!-- A count, not the first peer id. With three devices connected, naming
+			     one of them and staying silent about the others was the bug: the
+			     screen said "connected to …" and looked the same whether one device
+			     or four were on the other end. The ids are in the list below. -->
+			<span class="text-success">
+				{m.sync_peers({ count: $connectedPeersStore.length })}
 			</span>
 		{:else if step === 'failed'}
 			<span class="text-danger">{m.connect_status_failed({ reason: failure })}</span>
@@ -516,6 +582,28 @@
 				<span class="text-muted">{m.join_busy()}</span>
 			{/if}
 		</p>
+	{/if}
+
+	<!--
+		Who is on the other end — all of them.
+
+		Until now this screen could connect a second, third and fourth device and
+		show none of it: one line naming the first peer, and a front desk with a
+		teacher and two students on it looked exactly like a front desk with one.
+		The per-row disconnect is the reason it is a list rather than a count: a
+		student leaving should not cost the two connections that are staying.
+	-->
+	{#if devices.length > 0}
+		<section class="mt-4 max-w-md" data-testid="devices">
+			<h2 class="text-sm font-medium">{m.connect_devices_title()}</h2>
+			<qr-peers
+				bind:this={peerList}
+				data-testid="device-list"
+				class="mt-2 block"
+				style="--qr-peers-background: transparent; --qr-peers-border: currentColor; --qr-peers-accent: currentColor; --qr-peers-muted: currentColor;"
+				ondisconnect={(/** @type {any} */ event) => disconnectPeer(event.detail.peerId)}
+			></qr-peers>
+		</section>
 	{/if}
 
 	{#if step === 'handed-over'}

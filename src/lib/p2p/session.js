@@ -198,6 +198,21 @@ export function createSignalling(node) {
 		 */
 		connect: (peerId) => session.dial(peerId),
 		classify,
+		/**
+		 * Every completed handshake, whichever side started it.
+		 *
+		 * The one place a peer id and its RTCPeerConnection arrive together. The
+		 * session keeps outbound sessions keyed by session id and inbound ones as a
+		 * bare set of peer connections, so neither collection can answer "which
+		 * connection belongs to this peer" on its own — but the event carries both.
+		 *
+		 * @param {(event: any) => void} handler
+		 * @returns {() => void} stop listening
+		 */
+		onConnect(handler) {
+			session.addEventListener('connect', handler);
+			return () => session.removeEventListener('connect', handler);
+		},
 		// The peer connections themselves, so diagnostics can report what WebRTC
 		// thinks. A stalled handshake stalls underneath libp2p, where the only
 		// symptom above is a screen that never changes.
