@@ -30,13 +30,26 @@ export const ENTITY = {
 	registerCourt: 'Amtsgericht Leipzig',
 	vatId: 'DE270240660',
 	phone: '+49 / 87 21 / 5 06 49 96',
-	email: 'info@le-space.de'
+	email: 'info@le-space.de',
+	website: 'https://le-space.de'
 };
 
 /**
+ * @typedef {object} LegalLink
+ * @property {string} label
+ * @property {string} href
+ */
+
+/**
+ * A link is its own field rather than a URL inside a paragraph, because the page
+ * renders paragraphs as text: a URL written into one would be readable and not
+ * clickable. Rendering the prose as HTML instead would open a needless injection
+ * surface for text that is ours anyway.
+ *
  * @typedef {object} LegalSection
  * @property {string} heading
  * @property {string[]} paragraphs
+ * @property {LegalLink[]} [links]
  */
 
 /** @type {Record<'de' | 'en', { imprint: LegalSection[], privacy: LegalSection[] }>} */
@@ -53,7 +66,8 @@ export const LEGAL = {
 			},
 			{
 				heading: 'Kontakt',
-				paragraphs: [`Telefon: ${ENTITY.phone}\nE-Mail: ${ENTITY.email}`]
+				paragraphs: [`Telefon: ${ENTITY.phone}\nE-Mail: ${ENTITY.email}`],
+				links: [{ label: ENTITY.website.replace('https://', ''), href: ENTITY.website }]
 			},
 			{
 				heading: 'Umsatzsteuer-ID',
@@ -95,7 +109,8 @@ export const LEGAL = {
 				paragraphs: [
 					'Für die Daten seiner Schüler ist das jeweilige Yogastudio verantwortlich im Sinne der DSGVO. Studio und Schüler regeln das Verhältnis untereinander; die Le Space UG ist daran nicht beteiligt und erhält keinen Zugriff.',
 					'Für die Bereitstellung dieser Website und dieses Impressums ist die Le Space UG verantwortlich.'
-				]
+				],
+				links: [{ label: ENTITY.website.replace('https://', ''), href: ENTITY.website }]
 			},
 			{
 				heading: 'Was trotzdem nach außen sichtbar wird',
@@ -142,7 +157,8 @@ export const LEGAL = {
 			},
 			{
 				heading: 'Contact',
-				paragraphs: [`Phone: ${ENTITY.phone}\nEmail: ${ENTITY.email}`]
+				paragraphs: [`Phone: ${ENTITY.phone}\nEmail: ${ENTITY.email}`],
+				links: [{ label: ENTITY.website.replace('https://', ''), href: ENTITY.website }]
 			},
 			{
 				heading: 'VAT ID',
@@ -184,7 +200,8 @@ export const LEGAL = {
 				paragraphs: [
 					'Each yoga studio is the controller under the GDPR for its students’ data. Studio and student arrange that between themselves; Le Space UG is not a party to it and has no access.',
 					'Le Space UG is responsible for providing this website and this imprint.'
-				]
+				],
+				links: [{ label: ENTITY.website.replace('https://', ''), href: ENTITY.website }]
 			},
 			{
 				heading: 'What is nevertheless visible outside',

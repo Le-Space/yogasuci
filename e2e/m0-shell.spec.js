@@ -101,6 +101,13 @@ test.describe('app shell', () => {
 		const text = await alice.getByTestId('legal-privacy').textContent();
 		expect(text).toMatch(/IPFS/);
 		expect(text).toMatch(/STUN/);
+
+		// The operator has to be findable, not only named. One link in each of the
+		// two documents — asserted as a real href, because a URL rendered as text
+		// in a legal notice is the kind of thing that looks right and is not.
+		const links = alice.getByTestId('legal-link');
+		await expect(links).toHaveCount(2);
+		await expect(links.first()).toHaveAttribute('href', 'https://le-space.de');
 	});
 
 	// Language follows the device before anything else, so the locale is set on
