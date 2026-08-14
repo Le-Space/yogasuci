@@ -30,6 +30,18 @@ export default [
 		}
 	},
 	{
+		// The legal page renders its links from data, so the rule cannot see that
+		// the target is an absolute external URL. `resolve()` is for app routes;
+		// pointing it at https://le-space.de would be wrong, not merely noisy.
+		//
+		// Scoped to this one file rather than turned off globally: the rule is
+		// worth keeping everywhere an internal link could be written by hand.
+		files: ['src/routes/legal/+page.svelte'],
+		rules: {
+			'svelte/no-navigation-without-resolve': ['error', { ignoreLinks: true }]
+		}
+	},
+	{
 		// `_`-prefixed bindings are the deliberate destructure-to-drop used in
 		// signingPayload; everything else unused in the ledger is a real mistake.
 		files: ['src/lib/ledger/**/*.ts'],

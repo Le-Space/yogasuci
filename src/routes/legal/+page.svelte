@@ -27,6 +27,27 @@
 			{#each section.paragraphs as paragraph, index (index)}
 				<p class="mt-2 max-w-2xl whitespace-pre-line text-muted">{paragraph}</p>
 			{/each}
+
+			{#if section.links}
+				<p class="mt-2">
+					{#each section.links as link (link.href)}
+						<!--
+							Same shape as the source link in the header: `noreferrer` as well
+							as `noopener`, because there is no reason to tell the operator's
+							own site which legal section somebody was reading when they left.
+						-->
+						<a
+							href={link.href}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="underline"
+							data-testid="legal-link"
+						>
+							{link.label}
+						</a>
+					{/each}
+				</p>
+			{/if}
 		</div>
 	{/each}
 </section>
@@ -40,6 +61,27 @@
 			{#each section.paragraphs as paragraph, index (index)}
 				<p class="mt-2 max-w-2xl whitespace-pre-line text-muted">{paragraph}</p>
 			{/each}
+
+			{#if section.links}
+				<p class="mt-2">
+					{#each section.links as link (link.href)}
+						<!--
+							Same shape as the source link in the header: `noreferrer` as well
+							as `noopener`, because there is no reason to tell the operator's
+							own site which legal section somebody was reading when they left.
+						-->
+						<a
+							href={link.href}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="underline"
+							data-testid="legal-link"
+						>
+							{link.label}
+						</a>
+					{/each}
+				</p>
+			{/if}
 		</div>
 	{/each}
 </section>
