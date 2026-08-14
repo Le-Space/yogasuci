@@ -262,6 +262,8 @@
 	"sync_last_change": "Last change here: {time}",
 	"sync_local_only": "Recorded locally — has not reached the studio yet",
 	"sync_peers": "{count} device(s) connected",
+	"sync_received": "last received {time}",
+	"sync_received_never": "nothing received yet",
 	"sync_status_title": "Sync status",
 	"theme_dark": "Dark",
 	"theme_light": "Light",
