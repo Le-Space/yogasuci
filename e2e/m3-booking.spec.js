@@ -22,7 +22,23 @@ test.describe('bookings', () => {
 		// --- Bob books a class ------------------------------------------------
 		await bob.getByTestId('nav-program').click();
 		await expect(bob.locator('[data-course-id="course:vinyasa-mi-18"]')).toBeVisible(REPLICATED);
-		await bob.locator('[data-course-id="course:vinyasa-mi-18"]').getByTestId('course-book').click();
+		const card = bob.locator('[data-course-id="course:vinyasa-mi-18"]');
+		await card.getByTestId('course-book').click();
+
+		// The screen you are standing on has to answer, or nothing appears to have
+		// happened and the obvious response is to press again. The state replaces
+		// the button rather than sitting beside it, so a second request is not
+		// offered in the first place.
+		await expect(card.getByTestId('course-booking-state')).toHaveAttribute(
+			'data-status',
+			'requested'
+		);
+		await expect(card.getByTestId('course-book')).toHaveCount(0);
+
+		// Written here is not arrived there, and the line says which one this is.
+		// Bob is connected to Alice at this point, so it claims delivery — the
+		// disconnected wording is asserted in its own test below.
+		await expect(card.getByTestId('course-booking-delivery')).toBeVisible();
 
 		await bob.getByTestId('nav-bookings').click();
 		const booking = bob.locator('[data-testid="my-booking"]').first();
@@ -197,6 +213,62 @@ test.describe('bookings', () => {
 
 		// And no incoming queue at all: he is not a studio device.
 		await expect(bob.getByTestId('incoming-list')).toHaveCount(0);
+	});
+
+	test('a request made with nobody connected says it has not left the device', async ({
+		alice,
+		bob
+	}) => {
+		// The honest half of the feedback. Without a server nothing can confirm
+		// delivery, so the only truthful signal is whether anybody was there to
+		// carry it — and a student who books at home, before ever pairing, must
+		// not be told the studio has their request.
+		test.setTimeout(420_000);
+
+		await setUpStudio(alice);
+		await connectViaPaste(alice, bob);
+		await expect(bob.getByTestId('join-status')).toHaveAttribute('data-state', 'joined', READY);
+
+		// Bob keeps the programme he replicated and loses the peer that brought it.
+		await bob.getByTestId('nav-connect').click();
+		await bob.getByTestId('hang-up').click();
+		await expect(bob.getByTestId('sync-status')).toHaveAttribute('data-peers', '0', READY);
+
+		await bob.getByTestId('nav-program').click();
+		const card = bob.locator('[data-course-id="course:vinyasa-mi-18"]');
+		await expect(card).toBeVisible(READY);
+		await card.getByTestId('course-book').click();
+
+		await expect(card.getByTestId('course-booking-state')).toHaveAttribute(
+			'data-status',
+			'requested'
+		);
+		await expect(card.getByTestId('course-booking-delivery')).toContainText(/Gerät|device/);
+	});
+
+	test('a request can be withdrawn, and the course becomes bookable again', async ({
+		alice,
+		bob
+	}) => {
+		// A mis-tap must be undoable. Without this the state that replaces the
+		// button is a trap: it stops the second request and offers no way back.
+		test.setTimeout(420_000);
+
+		await setUpStudio(alice);
+		await connectViaPaste(alice, bob);
+		await expect(bob.getByTestId('join-status')).toHaveAttribute('data-state', 'joined', READY);
+
+		await bob.getByTestId('nav-program').click();
+		const card = bob.locator('[data-course-id="course:vinyasa-mi-18"]');
+		await expect(card).toBeVisible(REPLICATED);
+
+		await card.getByTestId('course-book').click();
+		await expect(card.getByTestId('course-booking-state')).toBeVisible();
+
+		await card.getByTestId('course-booking-withdraw').click();
+
+		await expect(card.getByTestId('course-book')).toBeVisible();
+		await expect(card.getByTestId('course-booking-state')).toHaveCount(0);
 	});
 });
 
