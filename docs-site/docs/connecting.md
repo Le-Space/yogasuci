@@ -33,6 +33,16 @@ Einladung öffnet, erzeugt eine **Antwort** — sein Schirm zeigt sie danach gen
 wie eure Einladung angezeigt wurde. Diese Antwort muss zurück: scannen lassen oder
 zurückschicken. Erst dann steht die Verbindung.
 
+Der Schirm sagt euch dabei, woran ihr seid. Nach einem gelungenen Scan steht dort
+**„Code gelesen und geprüft"** — ihr müsst nicht raten, ob die Kamera ihn erwischt
+hat. Und der Code, der danach zu sehen ist, trägt über sich **Antwort** statt
+**Einladung**: dieselbe Stelle, andere Bedeutung.
+
+Sobald die Verbindung steht, verschwindet der Code. Das ist Absicht — er ist
+verbraucht, und ein Bild, das stehen bleibt, sieht aus, als sei nichts passiert.
+Kommt gleich noch ein Gerät dazu, holt ihr mit **Weiteres Gerät verbinden** eine
+frische Einladung auf den Schirm.
+
 Kommt die Antwort per Messenger zurück und ihr tippt sie an, öffnet der Browser
 meist einen **neuen Tab**. Das ist in Ordnung. Er reicht die Antwort an das Tab
 weiter, in dem die Einladung entstanden ist, und sagt euch, dass er geschlossen

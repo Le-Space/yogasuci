@@ -77,6 +77,37 @@
 	 */
 	let shortCode = $state(false);
 
+	/**
+	 * Whether this device's code is off screen because it has been used.
+	 *
+	 * Not derived from `step`: `step` is already 'connected' when a second device
+	 * pairs, so a rule written on it would hide the first code and then leave the
+	 * next one up for good. What actually means "this code did its job" is the
+	 * number of connected devices going up, which is true every time.
+	 */
+	let codeHidden = $state(false);
+
+	/** Whether a code from another device was read, and read successfully. */
+	let scanAccepted = $state(false);
+
+	/**
+	 * Deliberately not `$state`: it is the effect's own memory of what it last
+	 * saw, and making it reactive would have the effect retrigger itself.
+	 */
+	let seenPeerCount = 0;
+
+	$effect(() => {
+		const count = $connectedPeersStore.length;
+
+		if (count > seenPeerCount) codeHidden = true;
+		seenPeerCount = count;
+	});
+
+	function showCodeAgain() {
+		codeHidden = false;
+		scanAccepted = false;
+	}
+
 	/** @type {HTMLVideoElement | undefined} */
 	// Typed loosely on purpose: svelte-check has no element interface for
 	// <qr-scanner> and falls back to HTMLVideoElement, which has neither open()
@@ -400,6 +431,7 @@
 
 	async function refreshInvite() {
 		failure = '';
+		scanAccepted = false;
 		try {
 			await makeInvitation();
 		} catch (/** @type {any} */ error) {
@@ -442,6 +474,9 @@
 
 			if (kind === 'offer') {
 				const { answer, remotePeerId, connected } = await $signallingStore.acceptOffer(trimmed);
+				// Only now: `acceptOffer` verifies the signature, so anything short of
+				// this is "a code was seen", not "a code was read".
+				scanAccepted = true;
 				// Show the reply straight away: it is what the other device is
 				// waiting for, and it is ready long before the link comes up.
 				await showPayload(answer, 'reply');
@@ -461,6 +496,10 @@
 				return;
 			}
 
+			// The inviting side reads a code too — the reply. Same acknowledgement,
+			// because the person holding this device has the same doubt about the
+			// camera, and `acceptAnswer` below is the slow half.
+			scanAccepted = true;
 			step = 'connecting';
 			const remotePeerId = await $signallingStore.acceptAnswer(trimmed);
 
@@ -572,6 +611,21 @@
 		{/if}
 	</p>
 
+	<!--
+		The read itself, acknowledged.
+
+		Scanning used to be silent about the one thing the person doing it is
+		unsure of: whether the camera actually got it. The screen changed — a new
+		code appeared where the old one was — but nothing said that change was
+		caused by a successful read rather than by the invitation renewing itself.
+		Gone once connected, where the connection is the better news.
+	-->
+	{#if scanAccepted && (step === 'replying' || step === 'connecting')}
+		<p class="mt-2 text-sm text-success" data-testid="scan-accepted">
+			{m.connect_scan_accepted()}
+		</p>
+	{/if}
+
 	{#if $joinStore.state !== 'idle'}
 		<p class="mt-1 text-sm" data-testid="join-status" data-state={$joinStore.state}>
 			{#if $joinStore.state === 'joined'}
@@ -628,11 +682,51 @@
 		style="--qr-status-chip-background: transparent; --qr-status-chip-color: inherit; --qr-status-verdict-color: inherit;"
 	></qr-status>
 
-	{#if payload && step !== 'handed-over'}
-		<section class="mt-6 max-w-md rounded-card border border-border bg-surface p-6">
+	<!--
+		A code that has done its job comes down.
+
+		It used to stay: the screen re-armed itself with the next invitation the
+		moment a connection came up, so a device that had just paired went on
+		holding up a code nobody was waiting for. At a counter that reads as "it
+		did not work" — the one thing on screen has not changed. Inviting the next
+		person is one press away rather than automatic, which is also the honest
+		order: most of the time there is no next person.
+	-->
+	{#if codeHidden && step === 'connected'}
+		<button
+			type="button"
+			data-testid="show-code"
+			onclick={showCodeAgain}
+			class="mt-6 rounded-control border border-border px-4 py-2"
+		>
+			{m.connect_another()}
+		</button>
+	{/if}
+
+	{#if payload && step !== 'handed-over' && !codeHidden}
+		<section
+			class="mt-6 max-w-md rounded-card border border-border bg-surface p-6"
+			data-testid="code-card"
+			data-kind={step === 'replying' ? 'reply' : 'invite'}
+		>
 			<div class="flex flex-wrap items-start justify-between gap-3">
 				<div class="min-w-0">
-					<h2 class="text-lg font-medium">
+					<!--
+						Named on the code itself, not only in the heading. The reply
+						occupies the same card in the same place as the invitation, so
+						without this the screen looks unchanged at the exact moment it
+						changed meaning — and the other device is then shown a code
+						nobody can tell apart from the one it just scanned.
+					-->
+					<p
+						class="text-xs font-semibold tracking-wide uppercase {step === 'replying'
+							? 'text-accent'
+							: 'text-muted'}"
+						data-testid="code-kind"
+					>
+						{step === 'replying' ? m.connect_kind_reply() : m.connect_kind_invite()}
+					</p>
+					<h2 class="mt-1 text-lg font-medium">
 						{step === 'replying' ? m.connect_reply_title() : m.connect_ready_title()}
 					</h2>
 					<p class="mt-1 text-sm text-muted">

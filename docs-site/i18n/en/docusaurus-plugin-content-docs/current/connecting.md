@@ -33,6 +33,16 @@ invitation produces a **reply** — their screen then shows it exactly the way y
 showed the invitation. That reply has to come back: let it be scanned, or send it.
 Only then is the connection up.
 
+The screen tells you where you stand while this happens. After a successful scan
+it says **"Code read and verified"** — you do not have to guess whether the camera
+caught it. And the code shown afterwards is labelled **Reply** rather than
+**Invitation**: same place, different meaning.
+
+Once the connection is up, the code disappears. That is deliberate — it has been
+used, and an image that stays up looks as though nothing happened. If another
+device is joining right away, **Connect another device** puts a fresh invitation
+on screen.
+
 If the reply comes back through a messenger and you tap it, the browser usually
 opens a **new tab**. That is fine. It passes the reply to the tab where the
 invitation was made and tells you it can be closed. The connection happens where
