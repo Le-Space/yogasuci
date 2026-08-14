@@ -64,6 +64,8 @@
 	"connect_share": "Share code",
 	"connect_share_invite": "Share invitation",
 	"connect_share_reply": "Send reply back",
+	"connect_short_code": "Short code",
+	"connect_short_code_hint": "One image instead of a sequence — a single glance at the counter. Still experimental: under load about every second connection went silent, paired but with nothing arriving. Reading a short code always works, whether this is on or off.",
 	"connect_status_connected": "Connected to {peer}",
 	"connect_status_connecting": "Establishing the connection …",
 	"connect_status_failed": "Connection failed: {reason}",

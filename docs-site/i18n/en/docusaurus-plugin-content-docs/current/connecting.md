@@ -69,6 +69,33 @@ It is deliberately not on show: two visible routes side by side lead to the
 question of which of the two strings is the right one, and nobody should have to
 ask it.
 
+## Advanced: short code
+
+Noticed that the QR code does not stand still but cycles through several images?
+That is deliberate: the invitation is longer than fits in a single code, so it is
+split into a sequence. Scanning it works fine — but the phone has to be held
+steady for a moment.
+
+Under **Advanced** there is a switch for that: **Short code**. The same thing is
+sent, packed more tightly: about a quarter of the characters, and out of that
+comes one still image. At a counter that is a glance rather than a small
+choreography.
+
+It is off until somebody turns it on, and the reason is not that it is
+unfinished. Measurements of the underlying package found that under load about
+every second connection built this way went silent — connected, no error message,
+but nothing arriving. For a cash book that is the worst failure there is: two
+devices look paired while the passes sold on one never reach the other. We have
+not seen it in our own runs; the switch stays off until we can say more than "not
+so far".
+
+**Reading a short code always works.** The switch only changes what _this_ device
+hands out. A device with it off scans the short code of a device that has it on
+without any trouble, and replies in the same format.
+
+If a connection does stay silent: switch it off, **Refresh the invitation**,
+connect again. Nothing is lost.
+
 ## When it does not work
 
 **The QR code will not scan.** Turn up the screen brightness, 20–30 cm away, give

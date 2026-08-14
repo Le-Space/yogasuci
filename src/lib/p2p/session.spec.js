@@ -13,10 +13,15 @@
 // defaults to a 30 s `connectionTimeout`; passing our own is the whole of #27,
 // and deleting those two lines would look like tidying up.
 
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { setShortCodeEnabled } from './short-code.js';
 
 /** Captures what `createSignalling` constructs QRSession with. */
 const constructed = vi.hoisted(() => /** @type {any[]} */ ([]));
+
+/** Captures the options each `createOffer` reaches the package with. */
+const offered = vi.hoisted(() => /** @type {any[]} */ ([]));
 
 vi.mock('@le-space/libp2p-webrtc-qr', () => ({
 	QRSession: class {
@@ -29,6 +34,11 @@ vi.mock('@le-space/libp2p-webrtc-qr', () => ({
 		}
 		offers = new Map();
 		inbound = new Set();
+		/** @param {Record<string, unknown>} [options] */
+		createOffer(options) {
+			offered.push(options);
+			return Promise.resolve('payload');
+		}
 	},
 	parsePayload: vi.fn(),
 	QR_TYPE_OFFER: 'offer'
@@ -72,10 +82,68 @@ describe('the timeouts createSignalling hands to the package', () => {
 		expect(optionsFor().iceGatheringTimeout).toBe(15_000);
 	});
 
+	it('leaves the payload format at the package default', () => {
+		// The session is built once and lives as long as the screen; the format is
+		// a per-offer decision because a studio can change it with the screen open.
+		// Setting it here as well would give the setting two homes, and the stale
+		// one would win for any offer that forgot to pass it.
+		expect(optionsFor().compact).toBeUndefined();
+	});
+
 	it('passes an rtcConfiguration, which is what carries the ICE mode', () => {
 		// `?ice=host` works by this being a function that is asked each time —
 		// freezing it to a value would silently pin whichever mode was current when
 		// the session was built.
 		expect(optionsFor().rtcConfiguration).toBeTypeOf('function');
+	});
+});
+
+describe('which format an invitation goes out in', () => {
+	beforeEach(() => {
+		const values = new Map();
+		vi.stubGlobal('localStorage', {
+			/** @param {string} key */
+			getItem: (key) => (values.has(key) ? values.get(key) : null),
+			/** @param {string} key @param {string} value */
+			setItem: (key, value) => values.set(key, value),
+			/** @param {string} key */
+			removeItem: (key) => values.delete(key)
+		});
+		offered.length = 0;
+	});
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	/** @returns {Promise<Record<string, any>>} */
+	async function offerOptions() {
+		offered.length = 0;
+		await createSignalling({ peerId: { toString: () => 'peer' } }).createOffer();
+		return offered[0];
+	}
+
+	it('is the long payload for a studio that never chose', async () => {
+		expect((await offerOptions()).compact).toBe(false);
+	});
+
+	it('is the short code once a studio turns it on', async () => {
+		setShortCodeEnabled(true);
+
+		expect((await offerOptions()).compact).toBe(true);
+	});
+
+	it('follows a change made with the screen already open', async () => {
+		// The path that actually breaks if the setting is read once at construction:
+		// the session outlives the choice. Ticking the box and then refreshing the
+		// invitation must produce the format that was just chosen, not the one that
+		// was current when the connect screen mounted.
+		const signalling = createSignalling({ peerId: { toString: () => 'peer' } });
+
+		await signalling.createOffer();
+		setShortCodeEnabled(true);
+		await signalling.createOffer();
+
+		expect(offered.map((o) => o.compact)).toEqual([false, true]);
 	});
 });
