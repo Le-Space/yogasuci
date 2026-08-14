@@ -112,6 +112,15 @@ connect again. Nothing is lost.
 the autofocus a moment. Otherwise: share the link, or the text route under
 **Advanced**.
 
+**There is a warning next to the share button.** Your device has found that from
+this network it reaches nobody outside it — typical on mobile data. The QR code
+is still good: **in the same room you still connect**, because that needs no route
+out. It is a sent link that usually will not arrive. Switch to Wi-Fi, or have the
+code scanned in person.
+
+The warning is a statement about _this browser_, not about your network. The same
+phone on the same Wi-Fi judges differently in two browsers.
+
 **"This reply belongs to an invitation this tab did not make."** You opened a
 reply link, but the tab holding the invitation is gone — after a restart, for
 instance. Start again: new invitation, share it again.

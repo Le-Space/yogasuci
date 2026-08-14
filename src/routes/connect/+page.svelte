@@ -91,6 +91,31 @@
 	let scanAccepted = $state(false);
 
 	/**
+	 * What this browser found out about reaching anyone off this network.
+	 *
+	 * `null` until the probe has run, and `null` again if it cannot decide. Note
+	 * what it is *not*: a verdict on the network. The same phone on the same
+	 * Wi-Fi reports differently in two browsers, because whether a reflexive
+	 * candidate appears depends on the browser's WebRTC IP policy as much as on
+	 * the route (libp2p-webrtc-qr AGENTS.md §2). So it is worded as something
+	 * this device found, and it disables nothing.
+	 *
+	 * @type {'blocked' | 'unreliable' | null}
+	 */
+	let networkRisk = $state(null);
+
+	/**
+	 * `offNetworkRisk`, once the elements module has loaded.
+	 *
+	 * Held rather than imported at the top: that barrel defines custom elements
+	 * on import, and this route is prerendered — a static import would run it in
+	 * node, where `HTMLElement` does not exist.
+	 *
+	 * @type {((result: any) => 'blocked' | 'unreliable' | null) | null}
+	 */
+	let readRisk = $state(null);
+
+	/**
 	 * Deliberately not `$state`: it is the effect's own memory of what it last
 	 * saw, and making it reactive would have the effect retrigger itself.
 	 */
@@ -137,10 +162,22 @@
 
 		translateElements();
 
+		// The verdict, taken from the probe the panel already runs rather than by
+		// measuring a second time: `probe` carries the result, and asking the
+		// network twice to answer one question would double the STUN round trips
+		// somebody is waiting through.
+		const onProbe = (/** @type {any} */ event) => {
+			networkRisk = readRisk?.(event.detail) ?? null;
+		};
+
+		status.addEventListener('probe', onProbe);
+
 		// The same servers the handshake will use, so the reading is about this
 		// configuration rather than about a default somebody else picked.
 		status.rtcConfiguration = rtcConfiguration();
 		status.probe().catch(() => {});
+
+		return () => status.removeEventListener('probe', onProbe);
 	});
 
 	/**
@@ -170,7 +207,14 @@
 				open: m.qr_status_open(),
 				relay: m.qr_status_relay(),
 				symmetric: m.qr_status_symmetric(),
-				blocked: m.qr_status_blocked()
+				blocked: m.qr_status_blocked(),
+				measuring: m.qr_status_measuring(),
+				// The two alarms deliberately do not say "or use a relay", which the
+				// package's English defaults do. This application has no relay and is
+				// never getting one (CLAUDE.md), so that sentence would be advice it
+				// cannot honour — the worst kind on a screen somebody is stuck on.
+				alarm: m.qr_status_alarm(),
+				alarmUnreliable: m.qr_status_alarm_unreliable()
 			};
 		}
 
@@ -254,6 +298,19 @@
 	// with STUN off as with it on, and hiding the whole panel there - which is
 	// what this page did - hid the two rows that were still true.
 	const stunConfigured = typeof window !== 'undefined' && iceMode() !== 'host';
+
+	/**
+	 * Whether to advise against sending this invitation away.
+	 *
+	 * Gated on `stunConfigured` for the same reason the address rows are: with
+	 * `?ice=host` there is no STUN, so nothing reflexive is gathered and the probe
+	 * says `blocked` — truthfully, and about a setting somebody chose. Painting a
+	 * decision as a fault is worse than saying nothing (#26), and without this the
+	 * whole e2e suite would run under a red banner.
+	 *
+	 * @type {'blocked' | 'unreliable' | null}
+	 */
+	let shareRisk = $derived(stunConfigured ? networkRisk : null);
 	const statusRows = stunConfigured ? 'browser ipv4 ipv6 camera overall' : 'browser camera';
 	/** @type {HTMLCanvasElement | undefined} */
 	/** @type {AbortController | null} */
@@ -272,7 +329,8 @@
 		// StudioGate, so at this point they are not in the document yet - `status`
 		// and `scanner` are still undefined, and anything set on them now would be
 		// set on nothing.
-		import('@le-space/libp2p-webrtc-qr/elements').then(() => {
+		import('@le-space/libp2p-webrtc-qr/elements').then((elements) => {
+			readRisk = elements.offNetworkRisk;
 			elementsReady = true;
 		});
 
@@ -742,6 +800,29 @@
 					{step === 'replying' ? m.connect_share_reply() : m.connect_share_invite()}
 				</button>
 			</div>
+
+			<!--
+				Said at the button that is about to fail, not in the readiness panel
+				further up where it reads as one row among five.
+
+				Nothing is disabled, and that is the point rather than timidity: the
+				normal case at a counter is two devices in the same room, and a network
+				this verdict calls `blocked` still connects them over host candidates.
+				Disabling the code would break what works to protect what rarely
+				happens — and the verdict is about this browser anyway, not the network.
+				So both sentences end by naming the way that does work: scan it here.
+			-->
+			{#if shareRisk}
+				<p
+					class="mt-3 text-sm {shareRisk === 'blocked' ? 'text-danger' : 'text-warning'}"
+					data-testid="share-risk"
+					data-risk={shareRisk}
+				>
+					{shareRisk === 'blocked'
+						? m.connect_share_risk_blocked()
+						: m.connect_share_risk_unreliable()}
+				</p>
+			{/if}
 
 			{#if link}
 				<!-- The QR field keeps a light ground in both themes; see tokens.css.
