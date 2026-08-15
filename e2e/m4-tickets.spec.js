@@ -11,6 +11,7 @@ import {
 	onboard,
 	openCourseForm,
 	openPackageForm,
+	openPackagesTab,
 	test
 } from './fixtures.js';
 
@@ -65,6 +66,8 @@ test.describe('cash purchase', () => {
 		// name it was sold under, so retiring the pass cannot rewrite what Bob
 		// already paid.
 		await alice.getByTestId('nav-program').click();
+		// The programme opens on courses, so the passes have to be asked for.
+		await openPackagesTab(alice);
 		await alice
 			.locator('[data-package-id="package:zehner"]')
 			.getByTestId('package-deactivate')

@@ -198,6 +198,33 @@ test.describe('registry and programme', () => {
 		await expect(location).toBeVisible();
 		await expect(location).toHaveAttribute('data-active', 'false');
 	});
+
+	test('shows one list at a time, courses first', async ({ alice }) => {
+		// The two used to sit under each other, so a phone had to scroll past a whole
+		// programme to reach the prices. Courses stay the default: it is what the
+		// screen is named after and what a student opens it for.
+		test.setTimeout(240_000);
+
+		await onboard(alice);
+		await alice.getByTestId('studio-name').fill('Yoga Eggenfelden');
+		await alice.getByTestId('studio-save').click();
+		await alice.getByTestId('nav-program').click();
+		await expect(alice.getByTestId('studio-ready')).toBeVisible(READY);
+
+		await expect(alice.getByTestId('tab-courses')).toHaveAttribute('aria-selected', 'true');
+		await expect(alice.getByTestId('course-list')).toBeVisible();
+		await expect(alice.getByTestId('package-list')).toBeHidden();
+
+		await alice.getByTestId('tab-packages').click();
+
+		await expect(alice.getByTestId('package-list')).toBeVisible();
+		await expect(alice.getByTestId('course-list')).toBeHidden();
+
+		// Hidden, not gone. Both panels stay in the document so a half-typed course
+		// survives a stray tab click — and so `aria-controls` keeps pointing at
+		// something that exists, which is what axe checks on this screen.
+		await expect(alice.getByTestId('course-list')).toHaveCount(1);
+	});
 });
 
 /** @param {import('@playwright/test').Page} page */
