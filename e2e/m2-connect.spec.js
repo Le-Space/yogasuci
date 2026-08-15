@@ -114,6 +114,112 @@ test.describe('QR handshake', () => {
 		await expect(labels).toHaveText(['Browser', 'Kamera']);
 	});
 
+	test('leaves no English default showing in a German screen', async ({ alice }) => {
+		// The test above checks two labels, which is what a person can see. This
+		// checks the whole table, which is what actually goes wrong: the seam merges
+		// over the package's defaults, so a key nobody translated is not missing —
+		// it is present, in English, looking finished.
+		//
+		// That is not hypothetical. 0.8.0 added `measuring`, `alarm` and
+		// `alarmUnreliable`, and the two alarms are paragraphs. Untranslated they
+		// would have put English prose in front of a studio at the one moment the
+		// screen has something urgent to say.
+		//
+		// Written against every key rather than those three, so the next key added
+		// upstream fails here instead of shipping.
+		await alice.goto('/connect/?ice=host');
+		await onboard(alice, 'alice');
+		await alice.getByTestId('language-de').click();
+		await expect(alice.getByTestId('network-status')).toBeVisible({ timeout: 120_000 });
+
+		// Both tables come out of the running page. The defaults from a fresh
+		// element nobody has assigned to — `strings` starts as a copy of
+		// QR_STATUS_STRINGS — rather than from an import, because importing the
+		// barrel in node defines custom elements and dies on `HTMLElement`.
+		//
+		// The merged table rather than the rendered rows: `alarm` and
+		// `alarmUnreliable` only render on a network verdict this test cannot
+		// arrange, and those are precisely the two worth checking.
+		const { defaults, merged } = await alice.evaluate(() => ({
+			defaults: /** @type {any} */ (document.createElement('qr-status')).strings,
+			merged: /** @type {any} */ (document.querySelector('qr-status'))?.strings
+		}));
+
+		expect(merged).toBeTruthy();
+		expect(Object.keys(defaults).length).toBeGreaterThan(9);
+
+		// Words German keeps as they are. Listed rather than skipped silently: if
+		// one of them ever gets a German form, this list is where to notice.
+		const SAME_IN_BOTH = new Set(['browser', 'ipv4', 'ipv6']);
+
+		const untranslated = Object.entries(defaults)
+			.filter(([key, english]) => !SAME_IN_BOTH.has(key) && merged[key] === english)
+			.map(([key]) => key);
+
+		expect(untranslated).toEqual([]);
+	});
+
+	test('says nothing about reaching anyone when STUN was turned off', async ({ alice }) => {
+		// Without STUN nothing reflexive is gathered, so the probe reports `blocked`
+		// — truthfully, and about a setting somebody chose. This is #26 again: a
+		// decision painted as a fault is worse than silence. It is also what keeps
+		// the rest of the suite from running under a red banner, which is why it is
+		// asserted rather than assumed.
+		await openConnect(alice, 'alice');
+
+		await expect(alice.getByTestId('network-status')).toBeVisible();
+		await expect(alice.getByTestId('share-risk')).toHaveCount(0);
+	});
+
+	for (const [state, risk] of [
+		['symmetric', 'unreliable'],
+		['blocked', 'blocked']
+	]) {
+		test(`advises against sending an invitation when the network is ${state}`, async ({
+			alice
+		}) => {
+			// The verdict is fed in rather than provoked. A real one depends on what
+			// STUN says from wherever this runs, and the panel's own tests already
+			// refuse to assert colours for that reason — a test that goes red when
+			// Google's STUN has a bad afternoon says nothing about this application.
+			// What is ours, and what this checks, is the wiring from the probe event
+			// to the sentence beside the share button.
+			await alice.goto('/connect/');
+			await onboard(alice, 'alice');
+			await expect(alice.getByTestId('share-payload')).toBeVisible({ timeout: 120_000 });
+
+			// Dispatched inside the poll because the element's own probe resolves
+			// whenever the network lets it and would overwrite a single injection.
+			// Re-sending until it holds is race-free in a way that waiting a fixed
+			// time is not.
+			await expect
+				.poll(
+					async () => {
+						await alice.evaluate((overallState) => {
+							document
+								.querySelector('qr-status')
+								?.dispatchEvent(
+									new CustomEvent('probe', { detail: { overall: { state: overallState } } })
+								);
+						}, state);
+
+						return alice
+							.getByTestId('share-risk')
+							.getAttribute('data-risk')
+							.catch(() => null);
+					},
+					{ timeout: 60_000 }
+				)
+				.toBe(risk);
+
+			// The code itself is untouched. Two devices in the same room connect over
+			// host candidates whatever this verdict says, and disabling the thing that
+			// works to protect the thing that rarely happens would be the wrong trade.
+			await expect(alice.getByTestId('qr-image')).toBeVisible();
+			await expect(alice.getByTestId('share-payload')).toBeEnabled();
+		});
+	}
+
 	test('shows all five readiness rows when STUN is in play', async ({ alice }) => {
 		// The rest of the suite runs with ?ice=host, so without this the five-row
 		// configuration - the whole of #26 - would never render in a test.

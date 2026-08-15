@@ -114,6 +114,15 @@ neu verbinden. Verloren geht dabei nichts.
 20–30 cm, dem Autofokus einen Moment lassen. Sonst: Link teilen oder der Textweg
 unter **Erweitert**.
 
+**Neben dem Teilen-Knopf steht eine Warnung.** Dann hat euer Gerät festgestellt,
+dass es von diesem Netz aus niemanden draußen erreicht — typisch für Mobilfunk.
+Der QR-Code bleibt trotzdem gültig: **im selben Raum verbindet ihr euch weiterhin**,
+denn dafür braucht es kein Netz nach draußen. Nur ein verschickter Link kommt
+dann meist nicht an. Abhilfe: ins WLAN wechseln, oder vor Ort scannen lassen.
+
+Die Warnung ist eine Aussage über _diesen Browser_, nicht über euer Netz.
+Dasselbe Telefon im selben WLAN urteilt in zwei Browsern verschieden.
+
 **„Diese Antwort gehört zu einer Einladung, die dieses Tab nicht erzeugt hat."**
 Ihr habt einen Antwort-Link geöffnet, aber das Tab mit der Einladung ist zu — nach
 einem Neustart etwa. Fangt neu an: neue Einladung, neu teilen.
