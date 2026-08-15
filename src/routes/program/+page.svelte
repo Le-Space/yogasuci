@@ -55,6 +55,23 @@
 	let courseFormOpen = $state(false);
 	let packageFormOpen = $state(false);
 
+	/**
+	 * Which of the two lists is on screen. Courses first: it is what the screen is
+	 * named after and what a student opens it for.
+	 *
+	 * @type {'courses' | 'packages'}
+	 */
+	let tab = $state('courses');
+
+	/**
+	 * Typed here rather than inline, so assigning one to `tab` type-checks. An
+	 * inline array widens to `string[]`, which svelte-check catches — and it is
+	 * right to: the ids also name the panel elements the tabs point at.
+	 *
+	 * @type {readonly ('courses' | 'packages')[]}
+	 */
+	const TABS = ['courses', 'packages'];
+
 	// The owner, or a device the owner approved. Everyone else replicates the
 	// programme read-only: the ACL refuses their writes, and hiding the forms is
 	// honesty about that rather than the enforcement.
@@ -277,9 +294,51 @@
 		<p class="mt-4 text-sm text-muted" data-testid="guest-notice">{m.guest_readonly()}</p>
 	{/if}
 
-	<section class="mt-6 rounded-card border border-border bg-surface p-6">
-		<h2 class="eyebrow">{m.courses_title()}</h2>
+	<!--
+		Two lists, one at a time.
 
+		They used to sit under each other, which on a phone meant scrolling past a
+		whole programme to reach the prices — and the passes are what somebody at a
+		counter reaches for most often after the classes themselves. Courses stay the
+		default because that is what the screen is named after and what a student
+		opens it for.
+
+		A real tablist rather than two buttons that swap content: this is the widget
+		people expect, and the roles are what make it navigable by keyboard and
+		announced as "tab 1 of 2" rather than as an unexplained pair of buttons.
+
+		Both panels stay in the document with `hidden` on the inactive one, instead
+		of being swapped with an {#if}. Two reasons, and the second is the one that
+		bites: `aria-controls` has to point at an element that exists, or it becomes
+		an invalid reference that axe fails the page on — and a half-typed course
+		would be thrown away by a stray tab click.
+	-->
+	<div class="mt-6 flex gap-1 border-b border-border" role="tablist" data-testid="program-tabs">
+		{#each TABS as name (name)}
+			<button
+				type="button"
+				role="tab"
+				id="tab-{name}"
+				aria-selected={tab === name}
+				aria-controls="panel-{name}"
+				data-testid="tab-{name}"
+				onclick={() => (tab = name)}
+				class="rounded-t-control px-4 py-2 text-sm font-medium {tab === name
+					? 'border-b-2 border-accent text-text'
+					: 'text-muted'}"
+			>
+				{name === 'courses' ? m.courses_title() : m.packages_title()}
+			</button>
+		{/each}
+	</div>
+
+	<div
+		class="mt-6 rounded-card border border-border bg-surface p-6"
+		id="panel-courses"
+		role="tabpanel"
+		aria-labelledby="tab-courses"
+		hidden={tab !== 'courses'}
+	>
 		<ul class="mt-3 grid gap-2" data-testid="course-list">
 			{#each $coursesStore as entry (entry._id)}
 				{@const window = courseWindow(entry)}
@@ -633,11 +692,15 @@
 				</form>
 			</Modal>
 		{/if}
-	</section>
+	</div>
 
-	<section class="mt-6 rounded-card border border-border bg-surface p-6">
-		<h2 class="eyebrow">{m.packages_title()}</h2>
-
+	<div
+		class="mt-6 rounded-card border border-border bg-surface p-6"
+		id="panel-packages"
+		role="tabpanel"
+		aria-labelledby="tab-packages"
+		hidden={tab !== 'packages'}
+	>
 		<ul class="mt-3 grid gap-2" data-testid="package-list">
 			{#each $packagesStore as entry (entry._id)}
 				<li
@@ -779,7 +842,7 @@
 				</form>
 			</Modal>
 		{/if}
-	</section>
+	</div>
 
 	<!--
 		Last on the page on purpose: somebody arriving here to change one price

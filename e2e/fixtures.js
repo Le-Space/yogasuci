@@ -372,17 +372,62 @@ export async function connectViaCamera(offerer, who = 'scanner') {
  * @param {Page} page
  */
 export async function openCourseForm(page) {
+	await openTab(page, 'courses');
+
 	if (await page.getByTestId('course-mode').isVisible()) return;
 	await page.getByTestId('course-new').click();
 	await expect(page.getByTestId('course-mode')).toBeVisible();
 }
 
 /**
+ * Select one of the programme's two tabs.
+ *
+ * Both panels stay in the document with `hidden` on the inactive one, so the
+ * wrong tab does not make an element missing — it makes it *unclickable*, and
+ * Playwright waits rather than failing. That is worth knowing: the first version
+ * of this helper checked `count()`, which does not wait, returned early before
+ * the programme had rendered, and six tests each spent a ten-minute timeout on a
+ * button inside a hidden panel.
+ *
+ * @param {Page} page
+ * @param {'courses' | 'packages'} name
+ */
+export async function openTab(page, name) {
+	const tab = page.getByTestId(`tab-${name}`);
+
+	await expect(tab).toBeVisible({ timeout: 90_000 });
+
+	if ((await tab.getAttribute('aria-selected')) === 'true') return;
+
+	await tab.click();
+	await expect(tab).toHaveAttribute('aria-selected', 'true');
+}
+
+/**
+ * Bring the passes into view.
+ *
+ * The programme is two tabs now, courses first, so anything about passes has to
+ * ask for them. Idempotent, and it tolerates a page that has not rendered the
+ * tabs yet — a device with no studio never gets them at all.
+ *
+ * @param {Page} page
+ */
+export async function openPackagesTab(page) {
+	await openTab(page, 'packages');
+}
+
+/**
  * Open the pass form.
+ *
+ * Switches to the passes tab on the way: every caller of this wanted the form,
+ * not a lesson about where it now lives, and threading the tab through thirty-odd
+ * call sites would put the same two lines in six spec files.
  *
  * @param {Page} page
  */
 export async function openPackageForm(page) {
+	await openPackagesTab(page);
+
 	if (await page.getByTestId('package-id').isVisible()) return;
 	await page.getByTestId('package-new').click();
 	await expect(page.getByTestId('package-id')).toBeVisible();
