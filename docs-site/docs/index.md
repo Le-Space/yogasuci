@@ -49,6 +49,12 @@ verhindert das nicht — sie **zeigt** es, sobald die Geräte sich wieder begegn
 mit beiden Belegen. Mehr dazu unter [Was die App nicht
 kann](/what-it-cannot-do).
 
+**Der erste Schritt ist immer derselbe.** Ob ihr ein Studio führt oder zum Yoga
+geht: Das Gerät legt zuerst einen Passkey an. Was danach daraus wird, entscheidet
+der nächste Schritt und keine Angabe im Voraus — deshalb fragt euch hier auch
+niemand, wer ihr seid. Hattet ihr auf diesem Gerät schon einmal einen Passkey,
+nehmt den zweiten Knopf statt des ersten.
+
 ![Die Startseite](/img/screens/de/start.png)
 
 ## Woher der Name kommt

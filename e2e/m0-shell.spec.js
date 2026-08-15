@@ -5,19 +5,41 @@
 import { test, expect, connectViaPaste, onboard } from './fixtures.js';
 
 test.describe('app shell', () => {
-	test('the front page names both ways in, and the handbook', async ({ alice }) => {
+	test('asks a first visit for a passkey, not for a category', async ({ alice }) => {
 		await alice.goto('/');
 
-		// Somebody arriving here has two questions — what is this, and where do I
-		// start — and neither is answered by a list of milestones, which is what this
-		// page used to show on a live domain.
+		// The first screen is the one step everybody takes. It used to be a choice
+		// between "I run a studio" and "I go to yoga", which recorded nothing: roles
+		// are granted through the registry, so the fork only postponed this form.
+		await expect(alice.getByTestId('onboarding')).toBeVisible({ timeout: 90_000 });
+		await expect(alice.getByTestId('start-paths')).toHaveCount(0);
+
+		// Still says what this is, and still points at the handbook — both belong
+		// outside the gate, for somebody who has not decided to use the app yet and
+		// for somebody who cannot get past it.
 		await expect(alice.getByTestId('start-intro')).toBeVisible();
+		await expect(alice.getByTestId('start-handbook')).toHaveAttribute('href', /handbuch/);
+	});
+
+	test('names both ways in once the device has a passkey', async ({ alice }) => {
+		// The same two cards as before, moved to where they are an action rather
+		// than a gate: the passkey exists, so following one of them does something.
+		await alice.goto('/?ice=host');
+		await onboard(alice, 'alice');
+
 		await expect(alice.getByTestId('start-studio')).toBeVisible();
 		await expect(alice.getByTestId('start-student')).toBeVisible();
+	});
 
-		// There is nobody to ring when something is unclear, so the way to the
-		// handbook belongs on the page before anyone needs it.
-		await expect(alice.getByTestId('start-handbook')).toHaveAttribute('href', /handbuch/);
+	test('says what a new passkey costs a device that already had one', async ({ alice }) => {
+		// This screen cannot tell a new device from one whose storage was cleared —
+		// a browser never reveals whether a passkey exists without a gesture. So the
+		// consequence has to be legible before the press: creating a second passkey
+		// means a second DID, and the studio no longer knows this device.
+		await alice.goto('/');
+
+		await expect(alice.getByTestId('onboarding-create-warning')).toBeVisible({ timeout: 90_000 });
+		await expect(alice.getByTestId('recover-identity')).toBeVisible();
 	});
 
 	test('nothing scrolls sideways on a phone, with or without the counter screens', async ({

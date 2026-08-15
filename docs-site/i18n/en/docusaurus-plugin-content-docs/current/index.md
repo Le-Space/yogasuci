@@ -45,6 +45,12 @@ the same time, a pass can be redeemed twice. The app does not prevent that — i
 **shows** it, with both records, as soon as the devices meet again. More under
 [What the app cannot do](/what-it-cannot-do).
 
+**The first step is always the same.** Whether you run a studio or go to yoga,
+the device creates a passkey first. What it becomes after that is decided by the
+next step and not by anything declared in advance — which is why nobody here asks
+who you are. If this device has had a passkey before, take the second button
+rather than the first.
+
 ![The front page](/img/screens/en/start.png)
 
 ## Where the name comes from
