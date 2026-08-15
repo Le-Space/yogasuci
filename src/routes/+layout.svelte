@@ -1,6 +1,6 @@
 <script>
 	import '$lib/styles/tokens.css';
-	import { resolve } from '$app/paths';
+	import { base, resolve } from '$app/paths';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import LanguageSwitch from '$lib/components/LanguageSwitch.svelte';
 	import OmMark from '$lib/components/OmMark.svelte';
@@ -28,23 +28,29 @@
 	 * app is this call, and it was missing.
 	 *
 	 * `@vite-pwa/sveltekit` does not inject the registration the way the plain vite
-	 * plugin does — with SvelteKit the app imports the virtual module itself.
-	 * Dynamically and in `onMount`, because this route tree is prerendered and the
-	 * module does not exist in node.
+	 * plugin does, so the app has to do it. Not through `virtual:pwa-register`
+	 * though, which is the documented route and broke the build: importing it puts
+	 * the module in the SSR graph, the plugin then generates the worker during the
+	 * SSR pass — which on CI runs *first* — and the precache glob matches nothing
+	 * because no client asset exists yet. It passed locally only because the two
+	 * passes happened to run the other way round here.
 	 *
-	 * `immediate` so the worker takes control on this load rather than the next
-	 * one: the case that matters is a device seeing the app for the first time,
-	 * being installed, and then being used somewhere with no signal.
+	 * One plain call instead, with nothing for the bundler to reorder. Nothing is
+	 * lost with it: the generated worker already carries `skipWaiting` and
+	 * `clientsClaim`, so it takes control on this load rather than the next — which
+	 * is the case that matters, a device seeing the app once and then being used
+	 * somewhere with no signal. `registerSW()` adds update prompts this app does
+	 * not show.
 	 */
 	onMount(() => {
-		import('virtual:pwa-register')
-			.then(({ registerSW }) => registerSW({ immediate: true }))
-			.catch((error) => {
-				// A browser with no service worker support, or a build without the
-				// plugin. Neither is a reason to break the page — it just means this
-				// device has no offline copy.
-				console.warn('Service worker registration unavailable:', error);
-			});
+		if (!('serviceWorker' in navigator)) return;
+
+		navigator.serviceWorker.register(`${base}/sw.js`).catch((error) => {
+			// Not a reason to break the page: it only means this device has no
+			// offline copy. Said out loud rather than swallowed, because a silent
+			// failure here is precisely how the worker went unregistered for months.
+			console.warn('Service worker registration failed:', error);
+		});
 	});
 
 	// Route ids, resolved at the href. resolve() rather than a literal path is

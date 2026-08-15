@@ -179,7 +179,20 @@ test.describe('app shell', () => {
 			// Workbox matches the query string too, so `/program/?ice=host` misses an
 			// entry stored as `program`. Worth knowing, and not what a person does.
 			await alice.getByTestId('nav-program').click();
-			await expect(alice.getByTestId('onboarding')).toBeVisible({ timeout: 90_000 });
+
+			// The URL, not the gate. `onboarding` renders on both screens, so
+			// asserting it here proved only that *a* page was up — the first version
+			// of this test did exactly that and would have passed with the click
+			// doing nothing at all.
+			await expect(alice).toHaveURL(/\/program/, { timeout: 90_000 });
+
+			// Not asserted here: a *reload* on this subpage while offline. It does not
+			// work, and pretending otherwise in a test would be worse than the gap.
+			//
+			// The precache stores the route as `program` while the app, with
+			// `trailingSlash: 'always'`, asks for `/program/` — so the document is
+			// there under a name nothing requests. Online it does not show, because
+			// the miss falls through to the network. See #72.
 		} finally {
 			// Restored even on failure: the context is shared with nothing here, but
 			// a test that leaves the network down is a test that poisons its file.
