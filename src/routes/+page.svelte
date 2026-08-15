@@ -10,11 +10,27 @@
 	 *
 	 * There is no "log in" to point at, and that is the app rather than an omission:
 	 * a device creates a passkey and *becomes* a studio or a student by what it does
-	 * next. So both paths are named here, in the order somebody needs them, instead
-	 * of being left to be discovered.
+	 * next.
+	 *
+	 * Which is why the two paths now sit *behind* the gate rather than in front of
+	 * it. They used to be the first thing a visitor met, and they decided nothing:
+	 * two links, no stored role, no consequence — a fork that only postponed the one
+	 * step everybody has to take anyway. Roles here are granted rather than declared
+	 * (`registerDevice` writes owner/front-desk/teacher into the registry, and the
+	 * app says so to students: "that is the owner's decision"), so a choice made at
+	 * this point could not have been recorded even if somebody had asked for it.
+	 *
+	 * A passkey first, then the question of what to do with it — at which point the
+	 * same two cards are an action rather than a gate.
+	 *
+	 * The gate costs a returning device its node boot on this page, where before it
+	 * paid nothing. That is the trade, and it falls the right way: a device with a
+	 * passkey is a device that came here to use the app, and one without — the first
+	 * visit this page exists for — still boots nothing at all.
 	 */
 	import { base, resolve } from '$app/paths';
 	import InstallHint from '$lib/components/InstallHint.svelte';
+	import StudioGate from '$lib/components/StudioGate.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 
 	const PATHS = /** @type {const} */ ([
@@ -40,19 +56,28 @@
 
 <p class="mt-4 max-w-xl text-muted" data-testid="start-intro">{m.start_intro()}</p>
 
-<div class="mt-8 grid gap-4 sm:grid-cols-2" data-testid="start-paths">
-	{#each PATHS as entry (entry.path)}
-		<section class="rounded-card border border-border bg-surface p-6" data-testid={entry.testid}>
-			<h2 class="eyebrow">{entry.title()}</h2>
-			<p class="mt-2 text-sm text-muted">{entry.body()}</p>
-			<a
-				href={resolve(entry.path)}
-				class="mt-4 inline-block rounded-control bg-accent px-4 py-2 text-sm font-medium text-accent-contrast no-underline"
-			>
-				{entry.action()}
-			</a>
-		</section>
-	{/each}
+<div class="mt-8">
+	<StudioGate>
+		<p class="max-w-xl text-muted" data-testid="start-ready-intro">{m.start_ready_intro()}</p>
+
+		<div class="mt-4 grid gap-4 sm:grid-cols-2" data-testid="start-paths">
+			{#each PATHS as entry (entry.path)}
+				<section
+					class="rounded-card border border-border bg-surface p-6"
+					data-testid={entry.testid}
+				>
+					<h2 class="eyebrow">{entry.title()}</h2>
+					<p class="mt-2 text-sm text-muted">{entry.body()}</p>
+					<a
+						href={resolve(entry.path)}
+						class="mt-4 inline-block rounded-control bg-accent px-4 py-2 text-sm font-medium text-accent-contrast no-underline"
+					>
+						{entry.action()}
+					</a>
+				</section>
+			{/each}
+		</div>
+	</StudioGate>
 </div>
 
 <InstallHint />

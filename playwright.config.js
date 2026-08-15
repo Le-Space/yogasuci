@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const PORT = 4183;
+
 export default defineConfig({
 	testDir: 'e2e',
 	timeout: 90_000,
@@ -7,9 +9,19 @@ export default defineConfig({
 	// A failing handshake is almost always a real failure, not a flake. One
 	// retry in CI covers runner hiccups without hiding a broken transport.
 	retries: process.env.CI ? 1 : 0,
+	// 4183, not vite's default 4173. Several projects on this machine preview on
+	// the default, all of them with `--strictPort`, so whichever suite started
+	// second died with "port already used" — and the first one to notice was a
+	// developer wondering why an unrelated repository's tests had stopped working.
+	// A port of our own costs nothing and removes the class of failure; sharing it
+	// makes every local run depend on what else happens to be running.
+	//
+	// One constant rather than three literals: the command, the readiness probe
+	// and the baseURL have to agree, and the way that breaks is a suite that waits
+	// four minutes for a server already listening somewhere else.
 	webServer: {
-		command: 'pnpm run build && pnpm exec vite preview --port 4173 --strictPort',
-		port: 4173,
+		command: `pnpm run build && pnpm exec vite preview --port ${PORT} --strictPort`,
+		port: PORT,
 		// Never reuse, not even locally. A server left running from an earlier run
 		// serves the bundle it was built from, so a local run can silently test
 		// code that no longer exists — which cost several debugging rounds where
@@ -19,7 +31,7 @@ export default defineConfig({
 		timeout: 240_000
 	},
 	use: {
-		baseURL: 'http://localhost:4173',
+		baseURL: `http://localhost:${PORT}`,
 		screenshot: 'only-on-failure',
 		video: 'retain-on-failure',
 		trace: 'on-first-retry'

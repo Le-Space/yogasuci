@@ -66,8 +66,11 @@ test('the screens the handbook talks about', async ({ alice, bob, carol }) => {
 	test.setTimeout(900_000);
 
 	// --- The front door ----------------------------------------------------
+	// What a first visit actually sees now: the one step everybody takes. The two
+	// paths moved behind the gate, so waiting for them here would wait for
+	// something that only appears once a passkey exists.
 	await alice.goto('/?ice=host');
-	await expect(alice.getByTestId('start-paths')).toBeVisible();
+	await expect(alice.getByTestId('onboarding')).toBeVisible(READY);
 	await shoot(alice, 'start');
 
 	// --- Setting up --------------------------------------------------------

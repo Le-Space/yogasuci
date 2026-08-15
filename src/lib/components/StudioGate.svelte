@@ -96,6 +96,26 @@
 				>
 					{m.onboarding_create()}
 				</button>
+
+				<!--
+					The consequence, next to the button that causes it.
+
+					This screen appears whenever local storage holds no credential, and
+					that is two different situations wearing the same face: a genuinely
+					new device, and one whose storage was cleared — a new browser, a
+					wiped profile, a passkey synced from elsewhere. In the second, the
+					top button is the wrong one, and pressing it does not fail: it makes
+					a *second* passkey and therefore a second DID, under which the
+					studio does not know this device and its old passes are unreachable.
+
+					A browser will not tell us which situation this is — it never reveals
+					whether a passkey exists without a gesture, on purpose. So the choice
+					cannot be made for the person, and the only honest help is to name
+					what each button does before they press one.
+				-->
+				<p class="mt-2 max-w-md text-sm text-muted" data-testid="onboarding-create-warning">
+					{m.onboarding_create_warning()}
+				</p>
 			</form>
 
 			<!--
