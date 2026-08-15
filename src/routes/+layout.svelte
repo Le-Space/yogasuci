@@ -9,9 +9,43 @@
 	import { getLocale } from '$lib/paraglide/runtime.js';
 	import { canEditProgram } from '$lib/db/join.js';
 	import { devicesStore, studioStore } from '$lib/db/registry.js';
+	import { onMount } from 'svelte';
 	import * as m from '$lib/paraglide/messages.js';
 
 	let { children } = $props();
+
+	/**
+	 * Turn the service worker on.
+	 *
+	 * It was built and never used. `vite-pwa` emitted `sw.js` with a 69-file
+	 * precache manifest and `registerSW.js` beside it, and nothing ever loaded
+	 * either — so the app had a complete offline cache it never registered, and
+	 * opening it without a network showed the browser's error page.
+	 *
+	 * Nothing pointed at it. The manifest was right, the icons resolved, and the
+	 * installability test was green, because all of that is about *installing* the
+	 * app rather than about running it offline. The bit that makes it an offline
+	 * app is this call, and it was missing.
+	 *
+	 * `@vite-pwa/sveltekit` does not inject the registration the way the plain vite
+	 * plugin does — with SvelteKit the app imports the virtual module itself.
+	 * Dynamically and in `onMount`, because this route tree is prerendered and the
+	 * module does not exist in node.
+	 *
+	 * `immediate` so the worker takes control on this load rather than the next
+	 * one: the case that matters is a device seeing the app for the first time,
+	 * being installed, and then being used somewhere with no signal.
+	 */
+	onMount(() => {
+		import('virtual:pwa-register')
+			.then(({ registerSW }) => registerSW({ immediate: true }))
+			.catch((error) => {
+				// A browser with no service worker support, or a build without the
+				// plugin. Neither is a reason to break the page — it just means this
+				// device has no offline copy.
+				console.warn('Service worker registration unavailable:', error);
+			});
+	});
 
 	// Route ids, resolved at the href. resolve() rather than a literal path is
 	// what keeps the app working when it is served from a subpath — which is

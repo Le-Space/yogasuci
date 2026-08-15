@@ -6,4 +6,5 @@ declare global {
 	const __COMMIT__: string;
 	namespace App {}
 }
+
 export {};
