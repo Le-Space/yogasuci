@@ -152,6 +152,7 @@
 	"install_title": "Auf den Startbildschirm legen",
 	"join_busy": "Studio wird geöffnet …",
 	"join_failed": "Studio konnte nicht geöffnet werden: {reason}",
+	"join_membership": "Gehört zu „{studio}\" — abgeglichen wird, sobald ein Gerät des Studios verbunden ist.",
 	"join_success": "Mit „{studio}\" verbunden — Programm wird repliziert.",
 	"language_switch": "Sprache wechseln",
 	"legal_imprint": "Impressum",

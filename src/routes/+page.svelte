@@ -29,9 +29,29 @@
 	 * visit this page exists for — still boots nothing at all.
 	 */
 	import { base, resolve } from '$app/paths';
+	import { goto } from '$app/navigation';
 	import InstallHint from '$lib/components/InstallHint.svelte';
 	import StudioGate from '$lib/components/StudioGate.svelte';
+	import { studioStore } from '$lib/db/registry.js';
 	import * as m from '$lib/paraglide/messages.js';
+
+	/**
+	 * A device that already belongs to a studio does not need to be asked again.
+	 *
+	 * The two cards answer "what should this device become", and once it has become
+	 * something the question is spent — a front desk opening the app got a menu
+	 * where it wanted its programme. So the test is the studio, not whether the
+	 * passkey is new: a device that just created one has nothing to show yet and
+	 * belongs on the cards, and a device that joined last week belongs on the
+	 * programme, whichever of the two its passkey is.
+	 *
+	 * `$studioStore` is only populated after the registry is open, which happens
+	 * inside the gate — so this fires when the boot finishes rather than on mount,
+	 * and a device with no studio simply never satisfies it.
+	 */
+	$effect(() => {
+		if ($studioStore) goto(resolve('/program'));
+	});
 
 	const PATHS = /** @type {const} */ ([
 		{

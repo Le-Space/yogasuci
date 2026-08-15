@@ -685,9 +685,47 @@
 	{/if}
 
 	{#if $joinStore.state !== 'idle'}
-		<p class="mt-1 text-sm" data-testid="join-status" data-state={$joinStore.state}>
+		<!--
+			`data-live` alongside `data-state`, because they are the two facts this
+			line carries and the old tests could only see one. Both sentences name the
+			studio, so an assertion on the text passed either way — which is how a
+			green "Programm wird repliziert" survived on a device with no connection.
+		-->
+		<p
+			class="mt-1 text-sm"
+			data-testid="join-status"
+			data-state={$joinStore.state}
+			data-live={$connectedPeersStore.length > 0}
+		>
 			{#if $joinStore.state === 'joined'}
-				<span class="text-success">{m.join_success({ studio: $joinStore.studioName ?? '' })}</span>
+				<!--
+					Two different sentences, because "joined" and "connected" are two
+					different facts and this line used to conflate them.
+
+					`joinStore` never returns to idle, and it should not: belonging to a
+					studio is a membership, and it survives a connection the way it
+					survives a reload. What does not survive is the replication, and the
+					old wording claimed it in the present tense — so a phone whose
+					connection had died three minutes earlier read "Programm wird
+					repliziert" in green while the bar above it correctly said nobody was
+					connected. Reported from a real device, and the contradiction is the
+					bug rather than either half.
+
+					Liveness comes from the peer count, which is where it lives for the
+					whole app, rather than from a second copy that can go stale.
+				-->
+				<!--
+					And the colour with it. Green is a claim of its own: it says "this is
+					working right now", which is exactly what a stale line must not say.
+					A membership with nobody connected is neither good news nor bad — it
+					is a fact, and it gets the muted tone the rest of the app uses for
+					facts.
+				-->
+				<span class={$connectedPeersStore.length > 0 ? 'text-success' : 'text-muted'}>
+					{$connectedPeersStore.length > 0
+						? m.join_success({ studio: $joinStore.studioName ?? '' })
+						: m.join_membership({ studio: $joinStore.studioName ?? '' })}
+				</span>
 			{:else if $joinStore.state === 'error'}
 				<span class="text-danger">{m.join_failed({ reason: $joinStore.error ?? '' })}</span>
 			{:else}
