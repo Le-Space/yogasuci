@@ -31,6 +31,29 @@ test.describe('app shell', () => {
 		await expect(alice.getByTestId('start-student')).toBeVisible();
 	});
 
+	test('sends a device that already belongs to a studio to the programme', async ({ alice }) => {
+		// The two cards ask what this device should become. Once it has become
+		// something the question is spent, and a front desk opening the app got a
+		// menu where it wanted its programme.
+		//
+		// In-app navigation through the title, not `goto`: that is what a person
+		// clicks, and a full load would rebuild libp2p, Helia and OrbitDB to prove
+		// something about routing.
+		test.setTimeout(240_000);
+
+		await alice.goto('/studio/?ice=host');
+		await onboard(alice, 'alice');
+		await alice.getByTestId('studio-name').fill('Yoga Eggenfelden');
+		await alice.getByTestId('studio-save').click();
+
+		await alice.getByTestId('app-name').click();
+
+		// The URL, because this test is about routing. A testid on the programme
+		// would pass just as well from a page that merely rendered it.
+		await expect(alice).toHaveURL(/\/program/, { timeout: 90_000 });
+		await expect(alice.getByTestId('start-paths')).toHaveCount(0);
+	});
+
 	test('says what a new passkey costs a device that already had one', async ({ alice }) => {
 		// This screen cannot tell a new device from one whose storage was cleared —
 		// a browser never reveals whether a passkey exists without a gesture. So the

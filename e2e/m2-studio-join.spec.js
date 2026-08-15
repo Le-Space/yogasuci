@@ -124,6 +124,54 @@ test.describe('joining a studio', () => {
 		await expect(bob.getByTestId('connection-status')).toHaveAttribute('data-step', 'connected');
 		await expect(carol.getByTestId('connection-status')).toHaveAttribute('data-step', 'connected');
 	});
+
+	// Reported from a phone: the bar said "connected to nobody" while the line
+	// below it said, in green, that the programme was being replicated. Both were
+	// reading real state — the connection had died minutes earlier, most likely
+	// when the phone suspended the page — but only one of them knew.
+	//
+	// The membership is not the bug and must survive: belonging to a studio
+	// outlives a connection the way it outlives a reload. What must not survive is
+	// the claim that something is happening right now.
+	//
+	// Both directions, because the report came with an observation worth testing
+	// rather than dismissing: that it seemed to happen when the studio held out
+	// the code and the student scanned it, and not the other way round. The fix
+	// reads the peer count on whichever device renders the line, so it should not
+	// care — and "should not" is the reason to run it rather than to assert it.
+	for (const studioOffers of [true, false]) {
+		const direction = studioOffers ? 'the studio holds out the code' : 'the student holds it out';
+
+		test(`stops claiming a live sync once the connection is gone — ${direction}`, async ({
+			alice,
+			bob
+		}) => {
+			test.setTimeout(420_000);
+
+			await onboard(alice, 'alice');
+			await alice.getByTestId('studio-name').fill('Yoga Eggenfelden');
+			await alice.getByTestId('studio-save').click();
+
+			if (studioOffers) await connectViaPaste(alice, bob);
+			else await connectViaPaste(bob, alice);
+
+			const status = bob.getByTestId('join-status');
+
+			await expect(status).toHaveAttribute('data-state', 'joined', READY);
+			await expect(status).toHaveAttribute('data-live', 'true');
+
+			// --- the connection ends, the membership does not --------------------
+			await bob.getByTestId('hang-up').click();
+
+			await expect(status).toHaveAttribute('data-live', 'false', READY);
+			await expect(status).toHaveAttribute('data-state', 'joined');
+			await expect(status).toContainText('Yoga Eggenfelden');
+
+			// Asserted on the attribute rather than the sentence: both sentences name
+			// the studio, which is exactly why every existing test here stayed green
+			// while the screen was contradicting itself.
+		});
+	}
 });
 
 /**

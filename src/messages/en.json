@@ -152,6 +152,7 @@
 	"install_title": "Add to the home screen",
 	"join_busy": "Opening the studio …",
 	"join_failed": "Could not open the studio: {reason}",
+	"join_membership": "Belongs to “{studio}” — syncing resumes as soon as a studio device is connected.",
 	"join_success": "Connected to “{studio}” — the programme is replicating.",
 	"language_switch": "Switch language",
 	"legal_imprint": "Imprint",
