@@ -33,6 +33,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Tags, and enough history to reach the last one: the footer names the
+          # release this build is at or past (scripts/build-version.mjs), and a
+          # shallow clone brings none. Without this the deployed app silently
+          # drops its version and looks fine doing it.
+          fetch-depth: 0
 
       # No `version:` here. `packageManager` in package.json already pins it, and
       # naming it twice is an error rather than a preference — which is how this

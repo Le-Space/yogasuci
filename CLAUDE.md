@@ -70,6 +70,21 @@ Bezeichner bewusst weiterhin `yoga-p2p` heißen und warum, steht in
   Tailwind-Mapping; nie rohe Hex-Werte in Komponenten. Beide Themes pflegen.
 - Commits: klein, ein Thema, imperativische Message; kein Commit bei roten Tests.
 
+## Releases
+
+- Die im Fuß angezeigte Version kommt aus dem **letzten Git-Tag**, nicht aus
+  `package.json` (das Feld stand vom ersten Commit an auf `0.1.0` und log damit
+  jeden Deploy an). `scripts/build-version.mjs` leitet sie ab: genau auf dem Tag
+  `v0.2.0`, sieben Commits danach `v0.2.0+7`, ohne Tag gar nichts.
+- **Kein automatischer Bump pro Merge.** Der Commit-Hash identifiziert den Build
+  schon eindeutig; ein Zähler, der pro Merge tickt, ist ein langsamerer Hash. Ein
+  Tag wird gesetzt, wenn es einem Studio etwas zu sagen gibt.
+- Release schneiden: `git tag -a v0.2.0 -m "…"` auf `main`, dann pushen. Der
+  nächste Deploy zeigt die Version in App **und** Handbuch — beide lesen denselben
+  Tag, damit ein Studio die zwei vergleichen kann.
+- Workflows, die deployen, brauchen `fetch-depth: 0`. Ein flacher Klon bringt
+  keine Tags, und die Version verschwindet dann still.
+
 ## Tests
 
 - `pnpm test` = Unit (vitest, Node) + E2E (Playwright, Chromium-Gate).

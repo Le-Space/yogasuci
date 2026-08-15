@@ -10,17 +10,16 @@
 
 import { themes } from 'prism-react-renderer';
 import { execSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+
+import { currentRelease } from '../scripts/build-version.mjs';
 
 // Which build of the handbook this is.
 //
 // The same three facts the app puts in its own footer, and for the same reason:
 // the handbook is versioned by nothing except the moment it was published, so a
 // studio reading a page that contradicts their screen has no way to tell which
-// of the two is behind. Read from the *app's* package.json rather than this
-// site's own, because they ship from one repository and one version between them
-// is the truth.
-const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+// of the two is behind. The release comes from the same tag the app uses, so the
+// two can be compared at a glance — which is the whole point of printing it.
 
 function currentCommit() {
 	// CI checks out a detached HEAD; GitHub hands the SHA over directly, which
@@ -41,7 +40,7 @@ function currentCommit() {
 // is about "did this thing update"; this is one published page read from
 // everywhere, so a fixed zone is the only reading everyone shares.
 const buildStamp = [
-	`v${pkg.version}`,
+	currentRelease(),
 	currentCommit(),
 	`${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`
 ]

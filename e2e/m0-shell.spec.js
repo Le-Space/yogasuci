@@ -122,12 +122,28 @@ test.describe('app shell', () => {
 		await alice.goto('/program/?ice=host');
 		await expect(alice.getByTestId('onboarding')).toBeVisible({ timeout: 90_000 });
 
-		// Asserted as three real parts, because the way this fails is quietly: an
+		// Asserted as real parts, because the way this fails is quietly: an
 		// undefined replacement renders the literal word, and "vundefined" in a
 		// footer looks enough like a version to be scrolled past.
-		await expect(alice.getByTestId('build-stamp')).toHaveText(
-			/^v\d+\.\d+\.\d+ · [0-9a-f]{7,40} · .+\d.+$/
-		);
+		//
+		// The version is optional and the other two are not. It comes from a tag,
+		// so it is absent between releases and absent entirely until the first one
+		// — while commit and time answer on every build there has ever been.
+		const stamp = /** @type {string} */ (await alice.getByTestId('build-stamp').textContent());
+		const parts = stamp.split(' · ');
+
+		expect(parts.length).toBeGreaterThanOrEqual(2);
+
+		const [commit, time] = parts.slice(-2);
+
+		expect(commit).toMatch(/^[0-9a-f]{7,40}$/);
+		expect(time).toMatch(/\d/);
+
+		if (parts.length === 3) {
+			// A tag name with an optional distance: `v0.2.0` or `v0.2.0+7`. Never
+			// `vv…`, which is what composing a `v` onto a tag would produce.
+			expect(parts[0]).toMatch(/^v[^v].*$/);
+		}
 	});
 
 	// Language follows the device before anything else, so the locale is set on
