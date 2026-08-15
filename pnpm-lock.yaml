@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@le-space/orbitdb-identity-provider-webauthn-did': github:Le-Space/orbitdb-identity-provider-webauthn-did#v0.4.0
+  '@le-space/orbitdb-identity-provider-webauthn-did': 0.5.0
 
 importers:
 
@@ -24,8 +24,8 @@ importers:
         specifier: ^0.8.0
         version: 0.8.0(@multiformats/multiaddr@13.0.3)(libp2p@3.3.7)
       '@le-space/orbitdb-identity-provider-webauthn-did':
-        specifier: github:Le-Space/orbitdb-identity-provider-webauthn-did#v0.4.0
-        version: https://codeload.github.com/Le-Space/orbitdb-identity-provider-webauthn-did/tar.gz/49bcedae84c9e97e32ae2d85fa7bfa4ae23b3aa8(@orbitdb/core@4.0.0)
+        specifier: 0.5.0
+        version: 0.5.0(@orbitdb/core@4.0.0)
       '@libp2p/crypto':
         specifier: ^5.1.21
         version: 5.1.21
@@ -1073,8 +1073,8 @@ packages:
   '@le-space/iso-passkeys@0.3.1':
     resolution: {integrity: sha512-/sgAJxcCkPfylWb3RNmy4wY5QaHBJP02lKnoLu8OC8YGSh9mOKhZ0g2+rkwMrqCIa7/J/Q81UA8k3NQ/24m3mw==}
 
-  '@le-space/iso-webauthn-varsig@0.2.0':
-    resolution: {integrity: sha512-8sVwcu5yvSKkGZhaXzCA8eSim+TKwMBvz25sNkqGZsUkRIh1s5/PszyjO3C/CZasowHLIouaaLb/xd5VQUNzNw==}
+  '@le-space/iso-webauthn-varsig@0.3.0':
+    resolution: {integrity: sha512-qU3ptOP8ew2ZVr506N8joGsDXQNGjRq7VYBkmNdQKuFmbpDtjYyaSH2qyy0x3M8heghVzbB6SxhQM7o3U06w6Q==}
 
   '@le-space/libp2p-webrtc-qr@0.8.0':
     resolution: {integrity: sha512-vdTpZ2BlqLqmmGH/uMgFOWjeupNHwVcc7r+oFNi5I/PJ9GQ3zcYaA4G2Xl3fKKtftnR22dQmrc3EYkCPi7I2Kg==}
@@ -1082,9 +1082,8 @@ packages:
       '@multiformats/multiaddr': ^13.0.3
       libp2p: ^3.3.7
 
-  '@le-space/orbitdb-identity-provider-webauthn-did@https://codeload.github.com/Le-Space/orbitdb-identity-provider-webauthn-did/tar.gz/49bcedae84c9e97e32ae2d85fa7bfa4ae23b3aa8':
-    resolution: {tarball: https://codeload.github.com/Le-Space/orbitdb-identity-provider-webauthn-did/tar.gz/49bcedae84c9e97e32ae2d85fa7bfa4ae23b3aa8}
-    version: 0.4.0
+  '@le-space/orbitdb-identity-provider-webauthn-did@0.5.0':
+    resolution: {integrity: sha512-bPsdwuknemuq97FwaqT16tgj2FMlCm2kh0EuIU19V4qb7X2BUP3kxVZBrDjQFk+gFuVYty5gTlM+J5Uowi3WIQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       '@orbitdb/core': ^4.0.0
@@ -6362,7 +6361,7 @@ snapshots:
       iso-base: '@le-space/iso-base@4.3.0'
       iso-did: '@le-space/iso-did@2.1.2'
 
-  '@le-space/iso-webauthn-varsig@0.2.0':
+  '@le-space/iso-webauthn-varsig@0.3.0':
     dependencies:
       iso-base: '@le-space/iso-base@4.3.0'
 
@@ -6385,7 +6384,7 @@ snapshots:
       uint8arraylist: 3.0.2
       uint8arrays: 6.1.1
 
-  '@le-space/orbitdb-identity-provider-webauthn-did@https://codeload.github.com/Le-Space/orbitdb-identity-provider-webauthn-did/tar.gz/49bcedae84c9e97e32ae2d85fa7bfa4ae23b3aa8(@orbitdb/core@4.0.0)':
+  '@le-space/orbitdb-identity-provider-webauthn-did@0.5.0(@orbitdb/core@4.0.0)':
     dependencies:
       '@ipld/dag-cbor': 10.0.1
       '@ipld/dag-ucan': 3.4.5
@@ -6399,7 +6398,7 @@ snapshots:
       iso-did: '@le-space/iso-did@2.1.2'
       iso-passkeys: '@le-space/iso-passkeys@0.3.1'
       iso-web: 3.1.2
-      iso-webauthn-varsig: '@le-space/iso-webauthn-varsig@0.2.0'
+      iso-webauthn-varsig: '@le-space/iso-webauthn-varsig@0.3.0'
       multiformats: 14.0.5
 
   '@le-space/ucanto-interface@11.1.1':

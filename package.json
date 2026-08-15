@@ -54,7 +54,7 @@
 	},
 	"pnpm": {
 		"overrides": {
-			"@le-space/orbitdb-identity-provider-webauthn-did": "github:Le-Space/orbitdb-identity-provider-webauthn-did#v0.4.0"
+			"@le-space/orbitdb-identity-provider-webauthn-did": "0.5.0"
 		},
 		"onlyBuiltDependencies": [
 			"esbuild"
@@ -65,7 +65,7 @@
 		"@helia/libp2p": "^1.0.6",
 		"@ipld/dag-cbor": "^10.0.1",
 		"@le-space/libp2p-webrtc-qr": "^0.8.0",
-		"@le-space/orbitdb-identity-provider-webauthn-did": "github:Le-Space/orbitdb-identity-provider-webauthn-did#v0.4.0",
+		"@le-space/orbitdb-identity-provider-webauthn-did": "^0.5.0",
 		"@libp2p/crypto": "^5.1.21",
 		"@libp2p/gossipsub": "^16.1.0",
 		"@libp2p/identify": "^4.1.10",
