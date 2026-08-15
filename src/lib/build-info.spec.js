@@ -8,14 +8,27 @@ import { describe, expect, it } from 'vitest';
 import { buildStamp, builtAt, commit, version } from './build-info.js';
 
 describe('the build stamp', () => {
-	it('carries the version, so a release note has something to name', () => {
-		expect(buildStamp()).toContain(`v${version}`);
-	});
-
-	it('carries the commit, because a version says nothing about what happened since', () => {
-		// Cut rarely, by hand; the commit is what a fix is actually traced to.
+	it('carries the commit, which is the field that always answers', () => {
+		// The version comes from a tag and is absent between releases — and absent
+		// entirely until the first one. The commit is what a fix is traced to, and
+		// what identifies a build on a device nobody can reach.
 		expect(buildStamp()).toContain(commit);
 		expect(commit).toMatch(/^[0-9a-f]{7,40}$/);
+	});
+
+	it('shows a release only when there is one, and never doubles its v', () => {
+		// `version` is a tag name, so it brings its own `v`. Composing it as
+		// `v${version}` — which this did while the number came from package.json —
+		// would print `vv0.2.0` on the first tagged build and on no build before it.
+		// Deliberately conditional: this repository has no tag yet, and a test that
+		// demanded one would fail for a reason that is not a fault.
+		if (version) {
+			expect(version).toMatch(/^v.+/);
+			expect(buildStamp()).toContain(version);
+			expect(buildStamp()).not.toContain(`v${version}`);
+		} else {
+			expect(buildStamp().startsWith(commit)).toBe(true);
+		}
 	});
 
 	it('shows the time in the reader’s own zone, not as stored', () => {

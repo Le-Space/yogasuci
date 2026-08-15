@@ -4,12 +4,10 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
-import { fileURLToPath } from 'url';
-import { readFileSync } from 'fs';
 import { execSync } from 'child_process';
 
-const file = fileURLToPath(new URL('package.json', import.meta.url));
-const pkg = JSON.parse(readFileSync(file, 'utf8'));
+import { currentRelease } from './scripts/build-version.mjs';
+
 const buildDate = new Date().toISOString();
 
 /**
@@ -38,12 +36,20 @@ function currentCommit() {
 
 const commit = currentCommit();
 
+// From the last tag, not from package.json — see scripts/build-version.mjs for
+// why that field stopped being the answer. Empty until a tag exists, and the
+// footer then shows commit and time only.
+const release = currentRelease();
+
 export default defineConfig({
 	test: {
 		// The ledger is pure and must stay runnable without a browser
 		// (CLAUDE.md) — node is the environment that proves it.
 		environment: 'node',
-		include: ['src/**/*.spec.{js,ts}']
+		// `scripts/` too: what the footer calls a build is decided at build time,
+		// so the module that decides it lives outside src/ — and is exactly the
+		// kind of parser that should not meet its second input shape in production.
+		include: ['src/**/*.spec.{js,ts}', 'scripts/**/*.spec.{js,ts}']
 	},
 	plugins: [
 		tailwindcss(),
@@ -72,7 +78,7 @@ export default defineConfig({
 		)
 	],
 	define: {
-		__APP_VERSION__: JSON.stringify(pkg.version),
+		__APP_VERSION__: JSON.stringify(release),
 		__BUILD_DATE__: JSON.stringify(buildDate),
 		__COMMIT__: JSON.stringify(commit)
 	}

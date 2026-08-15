@@ -27,6 +27,12 @@ jobs:
       store_processed: ${{ steps.publish.outputs.store_processed }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Tags, and enough history to reach the last one: the footer names the
+          # release this build is at or past (scripts/build-version.mjs), and a
+          # shallow clone brings none. Without this the deployed app silently
+          # drops its version and looks fine doing it.
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -84,6 +90,12 @@ jobs:
       DEFAULT_DOMAIN: ${{ github.ref == 'refs/heads/main' && 'yogasuci.le-space.de' || '' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Tags, and enough history to reach the last one: the footer names the
+          # release this build is at or past (scripts/build-version.mjs), and a
+          # shallow clone brings none. Without this the deployed app silently
+          # drops its version and looks fine doing it.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
