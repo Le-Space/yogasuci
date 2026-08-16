@@ -59,6 +59,13 @@
 	 */
 	let step = $state('preparing');
 	let payload = $state('');
+
+	// Between taking a spent code off screen and having its replacement. Tracked
+	// rather than inferred from an empty payload, because the card has to stay
+	// where it is meanwhile: the renewal timer fires every four minutes while
+	// somebody is standing there waiting to be scanned, and a card that vanishes
+	// and comes back reads as something having gone wrong.
+	let renewing = $state(false);
 	/** What the QR encodes and the share sheet sends — the payload wrapped in a URL. */
 	let link = $state('');
 	let qrError = $state('');
@@ -538,8 +545,37 @@
 		// Close the previous unanswered offer first, or every renewal would
 		// strand a peer connection for the lifetime of the page.
 		$signallingStore.discardUnusedOffers();
-		await showPayload(await $signallingStore.createOffer(), 'invite');
+
+		// And take the old code off screen before building the new one, because
+		// creating an offer waits for ICE gathering — a second here, longer on a
+		// busy machine — and until this line existed the *previous* code stayed up
+		// for all of it.
+		//
+		// A renewal follows every connection, so that window falls exactly where a
+		// queue at the counter is: the device that just connected has moved aside
+		// and the next person is already pointing a camera at the screen. What they
+		// scan then is the invitation the previous device answered, and answering it
+		// a second time is a dead end no error can describe — that offer's peer
+		// connection is alive and its ICE credentials still check out, so the
+		// candidate pair comes up, but its DTLS handshake finished with the other
+		// device and no second one begins. The scanner sits at "connecting" until it
+		// gives up. Diagnosed from CI in #80.
+		renewing = true;
+		clearPayload();
+
+		try {
+			await showPayload(await $signallingStore.createOffer(), 'invite');
+		} finally {
+			renewing = false;
+		}
+
 		if (announce) step = 'inviting';
+	}
+
+	/** Nothing to scan is better than something spent. */
+	function clearPayload() {
+		payload = '';
+		link = '';
 	}
 
 	async function refreshInvite() {
@@ -870,7 +906,7 @@
 		</button>
 	{/if}
 
-	{#if payload && step !== 'handed-over' && !codeHidden}
+	{#if (payload || renewing) && step !== 'handed-over' && !codeHidden}
 		<section
 			class="mt-6 max-w-md rounded-card border border-border bg-surface p-6"
 			data-testid="code-card"
@@ -904,7 +940,8 @@
 					type="button"
 					data-testid="share-payload"
 					onclick={share}
-					class="shrink-0 rounded-control bg-accent px-4 py-2 font-medium text-accent-contrast"
+					disabled={renewing}
+					class="shrink-0 rounded-control bg-accent px-4 py-2 font-medium text-accent-contrast disabled:opacity-50"
 				>
 					{step === 'replying' ? m.connect_share_reply() : m.connect_share_invite()}
 				</button>
@@ -933,7 +970,12 @@
 				</p>
 			{/if}
 
-			{#if link}
+			{#if renewing}
+				<!-- Deliberately not the old code dimmed or greyed: it would still be
+				     scannable, and scanning it is the dead end this whole state exists
+				     to prevent (#80). -->
+				<p class="mt-4 text-sm text-muted" data-testid="qr-renewing">{m.connect_renewing()}</p>
+			{:else if link}
 				<!-- The QR field keeps a light ground in both themes; see tokens.css.
 				     data-link is what the code encodes, so a test photographs the same
 				     string a camera would read. -->

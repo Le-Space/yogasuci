@@ -98,14 +98,39 @@ test.describe('a front desk with more than one device on it', () => {
 		/** @type {string[]} */
 		const ids = [];
 
+		// This is where #80 was found, and the reporting stays because it is what
+		// found it. From above, a stalled handshake is a screen that never changes;
+		// `__yoga.webrtc()` describes the peer connections *underneath* libp2p, and
+		// there the third attempt said plainly what no timeout could: ICE connected
+		// while the transport did not, against an offer the hub had no answer for.
+		// Two devices talking about different sessions, not a slow one.
+		const report = async (/** @type {string} */ when) => {
+			for (const [name, page] of /** @type {const} */ ([
+				['hub', alice],
+				['leaf', leaves[ids.length]]
+			])) {
+				if (!page) continue;
+
+				const state = await page
+					.evaluate(() => ({
+						webrtc: /** @type {any} */ (window).__yoga?.webrtc?.(),
+						connections: /** @type {any} */ (window).__yoga?.connections?.()
+					}))
+					.catch(() => null);
+
+				console.log(`[mesh ${when} #${ids.length + 1}] ${name}: ${JSON.stringify(state)}`);
+			}
+		};
+
 		for (const leaf of leaves) {
-			// Three minutes rather than the suite's sixty seconds, and the number is
-			// a measurement rather than padding. On CI these took 15 s, 14 s, and
-			// then over 60 s for the third: the hub is replicating to two devices
-			// while a third pairs, which is genuinely more work, and the runner has
-			// two cores. Raising it here keeps the sixty-second gate on every other
-			// handshake in the suite, where it is what catches a real slowdown.
-			await connectViaPaste(alice, leaf, { connectTimeout: 180_000 });
+			try {
+				await connectViaPaste(alice, leaf);
+			} catch (error) {
+				await report('failed');
+				throw error;
+			}
+
+			await report('connected');
 			ids.push(await leaf.getByTestId('own-peer-id').innerText());
 		}
 
