@@ -62,6 +62,7 @@
 	"connect_ready_hint": "The QR code holds the invitation. Let the other device scan it — or send the link.",
 	"connect_ready_title": "Scan to connect",
 	"connect_refresh": "Refresh the invitation",
+	"connect_renewing": "Making a new code …",
 	"connect_reply_hint": "Nearly there. The other device still needs this reply — let it scan, or send it back.",
 	"connect_reply_orphan": "This reply belongs to an invitation this tab did not make. Open the link in the tab that holds the invitation — or make a new one here.",
 	"connect_reply_title": "Send the reply back",

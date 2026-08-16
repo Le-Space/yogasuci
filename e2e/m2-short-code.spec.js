@@ -40,11 +40,19 @@ test.describe('what a short code changes about the invitation', () => {
 		// `<qr-invite>` reports what it drew. Listening is the only way to know the
 		// frame count: a sequence and a single code look the same in the DOM, one
 		// <img> whose src is being swapped.
+		//
+		// Bound to the document rather than to the element, because the element is
+		// not permanent: renewing an invitation takes the spent code off screen
+		// while the replacement is built, so a listener held by the instance
+		// standing there now goes away with it and records nothing. In the capture
+		// phase because `render` does not bubble — capture reaches an ancestor
+		// either way, `bubbles` only decides the trip back up.
 		await alice.evaluate(() => {
-			const invite = document.querySelector('qr-invite');
 			/** @type {any} */ (window).__renders = [];
-			invite?.addEventListener('render', (/** @type {any} */ event) =>
-				/** @type {any} */ (window).__renders.push(event.detail)
+			document.addEventListener(
+				'render',
+				(/** @type {any} */ event) => /** @type {any} */ (window).__renders.push(event.detail),
+				true
 			);
 		});
 
