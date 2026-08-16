@@ -85,8 +85,7 @@ export async function onboard(page, who) {
 	await expect(onboarding.or(ready)).toBeVisible({ timeout: 90_000 });
 
 	if (await onboarding.isVisible()) {
-		await page.getByTestId('onboarding-user-id').fill(`${who}@example.com`);
-		await page.getByTestId('onboarding-display-name').fill(who);
+		await page.getByTestId('onboarding-user-id').fill(who);
 		await page.getByTestId('onboarding-submit').click();
 	}
 

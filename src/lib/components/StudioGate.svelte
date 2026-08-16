@@ -19,8 +19,10 @@
 
 	let { children } = $props();
 
-	let userId = $state('');
-	let displayName = $state('');
+	// WebAuthn takes an account name and a display name. Both are labels for the
+	// credential picker, neither identifies the passkey, so the screen asks once
+	// and gives the same answer to both.
+	let name = $state('');
 
 	onMount(async () => {
 		try {
@@ -33,7 +35,7 @@
 	async function create(/** @type {SubmitEvent} */ event) {
 		event.preventDefault();
 		try {
-			await createIdentityAndBoot({ userId, displayName });
+			await createIdentityAndBoot({ userId: name, displayName: name });
 		} catch {
 			// surfaced through bootStore
 		}
@@ -69,22 +71,20 @@
 
 			<form class="mt-4 grid max-w-md gap-3" onsubmit={create}>
 				<!--
-					The first field is not a label, whatever it looks like: the provider
-					builds the WebAuthn user handle out of it, and an authenticator
-					replaces a credential when the handle matches. Two people creating a
-					passkey on one front-desk device under the same name means the second
-					destroys the first, silently.
-
-					So the hint says so. It is the only technical sentence left on this
-					screen and it stays until the handle is random rather than typed —
-					Le-Space/orbitdb-identity-provider-webauthn-did#45, after which this
-					field is genuinely just a name and the two can become one.
+					One field now. It used to be two because the first one was not a
+					label at all: the provider built the WebAuthn user handle out of it,
+					and an authenticator replaces a credential whose handle matches, so
+					two people creating a passkey on one front-desk device under the same
+					name meant the second destroyed the first. The handle is random since
+					Le-Space/orbitdb-identity-provider-webauthn-did#45, which leaves a
+					name that is only a name — and one name is all this screen ever had
+					to ask for.
 				-->
 				<label class="grid gap-1 text-sm">
 					{m.onboarding_user_id()}
 					<input
 						data-testid="onboarding-user-id"
-						bind:value={userId}
+						bind:value={name}
 						required
 						autocomplete="username"
 						aria-describedby="user-id-hint"
@@ -92,20 +92,6 @@
 					/>
 					<span id="user-id-hint" class="text-xs text-muted" data-testid="onboarding-user-id-hint">
 						{m.onboarding_user_id_hint()}
-					</span>
-				</label>
-
-				<label class="grid gap-1 text-sm">
-					{m.onboarding_display_name()}
-					<input
-						data-testid="onboarding-display-name"
-						bind:value={displayName}
-						required
-						aria-describedby="display-name-hint"
-						class="rounded-control border p-2"
-					/>
-					<span id="display-name-hint" class="text-xs text-muted">
-						{m.onboarding_display_name_hint()}
 					</span>
 				</label>
 
