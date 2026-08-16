@@ -98,15 +98,12 @@ test.describe('a front desk with more than one device on it', () => {
 		/** @type {string[]} */
 		const ids = [];
 
-		// The third handshake fails on CI and only on CI — three times now, and each
-		// time at the *full* budget rather than near it: 15 s, 12 s, then 180 s.
-		// That is a cliff, not a slope, so a larger number is not the answer. What
-		// is missing is which layer stops. #80.
-		//
-		// So every attempt reports what WebRTC and libp2p think, from both sides.
-		// `__yoga.webrtc()` describes the peer connections *underneath* libp2p,
-		// which is where a stalled handshake actually stalls — from above the only
-		// symptom is a screen that never changes.
+		// This is where #80 was found, and the reporting stays because it is what
+		// found it. From above, a stalled handshake is a screen that never changes;
+		// `__yoga.webrtc()` describes the peer connections *underneath* libp2p, and
+		// there the third attempt said plainly what no timeout could: ICE connected
+		// while the transport did not, against an offer the hub had no answer for.
+		// Two devices talking about different sessions, not a slow one.
 		const report = async (/** @type {string} */ when) => {
 			for (const [name, page] of /** @type {const} */ ([
 				['hub', alice],
@@ -127,7 +124,7 @@ test.describe('a front desk with more than one device on it', () => {
 
 		for (const leaf of leaves) {
 			try {
-				await connectViaPaste(alice, leaf, { connectTimeout: 180_000 });
+				await connectViaPaste(alice, leaf);
 			} catch (error) {
 				await report('failed');
 				throw error;

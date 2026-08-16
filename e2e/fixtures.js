@@ -170,6 +170,20 @@ export async function enableShortCode(page) {
 }
 
 /**
+ * The last invitation each offering page handed out.
+ *
+ * A hub that pairs a second device shows a new invitation afterwards, and the
+ * old one stays on screen until ICE gathering for the replacement finishes.
+ * Answering that one connects nothing and reports nothing: its peer connection
+ * is alive, so ICE comes up, and its DTLS handshake belongs to the device that
+ * answered it first, so the transport never does. This is what made the four
+ * device test fail on CI and only on CI (#80).
+ *
+ * @type {WeakMap<Page, string>}
+ */
+const consumedOffers = new WeakMap();
+
+/**
  * Run the full three-step handshake over copy & paste.
  *
  * This is the default for the bulk of the suite: it exercises the same
@@ -184,10 +198,12 @@ export async function enableShortCode(page) {
  *   whatever format the offer arrived in, which is itself worth exercising.
  * @param {number} [options.connectTimeout] how long the connection may take.
  *   Sixty seconds is the gate for the whole suite and should stay there — it is
- *   what catches a handshake that got slower. Raised only by a caller that knows
- *   why its own case is slower: a hub that is already replicating to two devices
- *   while a third pairs is doing genuinely more work, and on a two-core runner
- *   that showed up as 15 s, 14 s, then over 60 s for the third.
+ *   what catches a handshake that got slower. This was once raised to 180 s for
+ *   the four-device test on the reading that a hub pairing a third device while
+ *   replicating to two is simply doing more work. It is not: that handshake was
+ *   answering a spent offer and would never have completed at any budget (#80).
+ *   A number raised to cover a hang buys nothing and costs three minutes before
+ *   the failure is reported.
  */
 export async function connectViaPaste(
 	offerer,
@@ -209,8 +225,15 @@ export async function connectViaPaste(
 	const previousAnswer = await currentPayload(answerer);
 
 	// No "create offer" step any more: openConnect already waited for the screen
-	// to stand one up by itself. Read it rather than ask for it.
-	const offer = await readPayload(offerer);
+	// to stand one up by itself. Read it rather than ask for it — but never read
+	// back an offer this helper has already handed to somebody.
+	//
+	// Keyed on what was consumed rather than on what the field held when this call
+	// started, which is the only version that is right both ways round: if the
+	// screen has already renewed, the poll passes on the first look, and if it has
+	// not, the poll waits instead of handing out the spent one.
+	const offer = await readPayload(offerer, { changedFrom: consumedOffers.get(offerer) ?? '' });
+	consumedOffers.set(offerer, offer);
 
 	await answerer.getByTestId('inbound-payload').fill(offer);
 	await answerer.getByTestId('submit-inbound').click();

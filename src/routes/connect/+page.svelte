@@ -538,8 +538,31 @@
 		// Close the previous unanswered offer first, or every renewal would
 		// strand a peer connection for the lifetime of the page.
 		$signallingStore.discardUnusedOffers();
+
+		// And take the old code off screen before building the new one, because
+		// creating an offer waits for ICE gathering — a second here, longer on a
+		// busy machine — and until this line existed the *previous* code stayed up
+		// for all of it.
+		//
+		// A renewal follows every connection, so that window falls exactly where a
+		// queue at the counter is: the device that just connected has moved aside
+		// and the next person is already pointing a camera at the screen. What they
+		// scan then is the invitation the previous device answered, and answering it
+		// a second time is a dead end no error can describe — that offer's peer
+		// connection is alive and its ICE credentials still check out, so the
+		// candidate pair comes up, but its DTLS handshake finished with the other
+		// device and no second one begins. The scanner sits at "connecting" until it
+		// gives up. Diagnosed from CI in #80.
+		clearPayload();
+
 		await showPayload(await $signallingStore.createOffer(), 'invite');
 		if (announce) step = 'inviting';
+	}
+
+	/** Nothing to scan is better than something spent. */
+	function clearPayload() {
+		payload = '';
+		link = '';
 	}
 
 	async function refreshInvite() {
