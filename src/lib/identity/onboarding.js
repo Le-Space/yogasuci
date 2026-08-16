@@ -7,20 +7,23 @@
 
 import { derived, get, writable } from 'svelte/store';
 
-import { startNode, ownDidStore, orbitdbStore, libp2pStore } from '../p2p/node.js';
+import { startNode, stopNode, ownDidStore, orbitdbStore, libp2pStore } from '../p2p/node.js';
 import { listenForDevices, serveStudio } from '../p2p/studio-protocol.js';
 import { describeOwnStudio, rememberPendingDevice } from '../db/join.js';
 import { openRegistry, registryDbStore } from '../db/registry.js';
 import { openProgram, programDbStore } from '../db/program.js';
 import { openJoinedStudios } from '../db/open-studios.js';
+import { clearStudios } from '../db/studios.js';
 import { grantStudioDevices, openOwnBookings } from '../db/bookings.js';
 import { openOwnTickets, ticketsDbStore } from '../db/tickets.js';
 import { devicesStore, studioStore } from '../db/registry.js';
 import {
 	createPasskeyCredential,
+	didForCredential,
 	hasStoredPasskeyCredential,
 	recoverPasskeyCredential
 } from './passkey-identity.js';
+import { clearActiveAccount, setActiveAccount } from './account.js';
 
 /**
  * @typedef {'idle' | 'starting' | 'ready' | 'error'} BootState
@@ -88,12 +91,49 @@ export async function bootIfIdentityKnown() {
 	return true;
 }
 
+/**
+ * Sign in as a different passkey on this device.
+ *
+ * One phone can be a studio at the counter and a student somewhere else, and
+ * each of those is a separate account with its own studios, addresses and
+ * blocks (#82). Switching therefore has to take the node down first: `startNode`
+ * returns the running one if there is any, and the stores are named for the
+ * account, so booting a second identity on top of a live node would leave it
+ * reading the first one's data — which is the bug this all comes from.
+ *
+ * Stopping is enough to clear the screens: every database module resets itself
+ * when `nodeStatusStore` reaches `idle`.
+ *
+ * The passkey is chosen in the platform's own dialog, which lists every one
+ * registered for this site. There is no list of accounts here and there should
+ * not be: the authenticator holds that, we do not, and inventing one would mean
+ * keeping a copy of who uses this device.
+ */
+export async function switchAccount() {
+	await stopNode();
+	clearStudios();
+	clearActiveAccount();
+
+	return recoverIdentityAndBoot();
+}
+
 /** @param {() => Promise<any>} obtainCredential */
 async function boot(obtainCredential) {
 	bootStore.set({ state: 'starting', error: null });
 
 	try {
 		const passkeyCredential = await obtainCredential();
+
+		// Before the node, not after: the block and data stores are named for the
+		// account and are built during startup. Everything this device stores per
+		// account — its addresses, its joined studios, its blocks — hangs off this
+		// one line, which is why it is the first thing that happens (#82).
+		const account = await didForCredential(passkeyCredential);
+		if (!account) {
+			throw new Error('The passkey did not produce a DID.');
+		}
+		setActiveAccount(account);
+
 		await startNode({ passkeyCredential });
 
 		if (!get(ownDidStore)) {

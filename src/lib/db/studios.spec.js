@@ -7,6 +7,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { get } from 'svelte/store';
 
 import { rememberStudio, storedStudios, updateStudio, studiosStore } from './studios.js';
+import { clearActiveAccount, setActiveAccount } from '../identity/account.js';
+
+// The list is per account now, not per device: one phone can hold a studio
+// passkey and a personal one, and the studios one has joined are not the other's
+// business (#82). So these all run as somebody.
+const ACCOUNT = 'did:key:zAccount';
 
 function fakeStorage(seed = {}) {
 	const values = new Map(Object.entries(seed));
@@ -23,10 +29,12 @@ function fakeStorage(seed = {}) {
 
 beforeEach(() => {
 	vi.stubGlobal('localStorage', fakeStorage());
+	setActiveAccount(ACCOUNT);
 	studiosStore.set([]);
 });
 
 afterEach(() => {
+	clearActiveAccount();
 	vi.unstubAllGlobals();
 });
 
@@ -76,6 +84,10 @@ describe('a device that joined before this list existed', () => {
 				'yoga-p2p.databases': JSON.stringify({ registry: 'old-addr', program: 'old-prog' })
 			})
 		);
+		// Signed in *after* the old data is in place, which is the order a real
+		// device boots in: the account adopts the names its studio is already
+		// stored under rather than being handed a suffixed empty one.
+		setActiveAccount(ACCOUNT);
 
 		expect(storedStudios()).toEqual([{ registry: 'old-addr', program: 'old-prog' }]);
 	});

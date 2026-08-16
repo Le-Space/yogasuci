@@ -106,6 +106,24 @@ export async function recoverPasskeyCredential() {
 	return loadWebAuthnCredential(CREDENTIAL_STORAGE_KEY);
 }
 
+/**
+ * The DID a credential resolves to.
+ *
+ * Not a property of the credential, which is the trap: `credential.did` reads
+ * as though it were one and is undefined, so a boot that trusted it named this
+ * device's storage after nothing at all. The provider derives the DID from the
+ * credential's public key, and `getId()` — the value `isOwnStudio()` later
+ * compares against — is this same call. Asking for it here is what lets the
+ * account be known before the node starts, which the OrbitDB stores need
+ * because they are named for it (#82).
+ *
+ * @param {any} credential
+ * @returns {Promise<string>}
+ */
+export async function didForCredential(credential) {
+	return /** @type {any} */ (WebAuthnDIDProvider).createDID(credential);
+}
+
 /** True when a serialized credential exists in this browser profile. */
 export function hasStoredPasskeyCredential() {
 	try {

@@ -8,6 +8,7 @@
 	import { buildStamp } from '$lib/build-info.js';
 	import { getLocale } from '$lib/paraglide/runtime.js';
 	import { canEditProgram } from '$lib/db/join.js';
+	import { studioReady, switchAccount } from '$lib/identity/onboarding.js';
 	import { devicesStore, studioStore } from '$lib/db/registry.js';
 	import { onMount } from 'svelte';
 	import * as m from '$lib/paraglide/messages.js';
@@ -195,6 +196,28 @@
 				until they need it, and then they need it on whatever screen they happen
 				to be looking at.
 			-->
+			<!--
+				In the footer next to the build stamp, for the same reason: reference
+				rather than news. Nobody switches account often, and a device that holds
+				two passkeys is the exception — but when it is the case, there was no way
+				to do it at all, and the only route to the other identity was clearing the
+				browser's storage (#82).
+
+				Outside StudioGate would be wrong here: with no identity there is nothing
+				to switch away from, and the gate already offers the passkey buttons.
+			-->
+			{#if $studioReady}
+				<button
+					type="button"
+					data-testid="switch-account"
+					onclick={switchAccount}
+					title={m.account_switch_hint()}
+					class="underline"
+				>
+					{m.account_switch()}
+				</button>
+			{/if}
+
 			<span class="font-mono text-xs" data-testid="build-stamp" title={m.build_stamp_title()}>
 				{buildStamp({ locale: getLocale() })}
 			</span>

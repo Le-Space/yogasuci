@@ -18,6 +18,7 @@ import { createOrbitDB, Identities, useIdentityProvider } from '@orbitdb/core';
 import { OrbitDBWebAuthnIdentityProviderFunction } from '@le-space/orbitdb-identity-provider-webauthn-did';
 import * as dagCbor from '@ipld/dag-cbor';
 
+import { activeAccount, scoped } from '../identity/account.js';
 import { askPeersForHistory, openDatabases, replicationErrors } from '../db/open.js';
 import { introductionLog } from '../db/introduction-log.js';
 import { createLibp2pConfig } from './libp2p-config.js';
@@ -108,8 +109,12 @@ export async function startNode({ passkeyCredential = null } = {}) {
 		const signalling = createSignalling(libp2p);
 		signallingHolder.current = signalling;
 
-		const blockstore = new LevelBlockstore(BLOCKSTORE_NAME);
-		const datastore = new LevelDatastore(DATASTORE_NAME);
+		// Named for the signed-in account. Two passkeys on one device are two
+		// separate stores, so the second one cannot read blocks the first pulled
+		// down — which is the point, and also why this cannot wait for OrbitDB to
+		// report the identity: the stores are built before it exists (#82).
+		const blockstore = new LevelBlockstore(scoped(BLOCKSTORE_NAME));
+		const datastore = new LevelDatastore(scoped(DATASTORE_NAME));
 		await datastore.open();
 
 		// Composed by hand rather than via createHelia: the default composition
@@ -251,6 +256,18 @@ async function createOrbitDBInstance(helia, passkeyCredential) {
 			})
 		)
 	});
+
+	// The account key and the identity have to be the same string, because one
+	// names this device's storage and the other is what `isOwnStudio()` compares
+	// against. Both are `WebAuthnDIDProvider.createDID(credential)` today, but if
+	// that ever stops being true the failure would be silent and awful: two
+	// accounts sharing a store while disagreeing about who owns what. Said out
+	// loud instead.
+	if (activeAccount() && identity.id !== activeAccount()) {
+		throw new Error(
+			`The passkey DID and the OrbitDB identity disagree (${activeAccount()} vs ${identity.id}), so this device cannot tell its accounts apart.`
+		);
+	}
 
 	ownDidStore.set(identity.id);
 

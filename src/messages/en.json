@@ -1,5 +1,7 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"account_switch": "Switch account",
+	"account_switch_hint": "Sign in with a different passkey on this device — your own rather than the studio's, say.",
 	"app_name": "Yogasūcī (योगसूची)",
 	"app_tagline": "More privacy — with no middlemen",
 	"booking_book": "Book",

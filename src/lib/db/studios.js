@@ -17,6 +17,8 @@
 
 import { derived, get, writable } from 'svelte/store';
 
+import { scoped } from '../identity/account.js';
+
 const STORAGE_KEY = 'yoga-p2p.studios';
 
 /**
@@ -48,10 +50,12 @@ const LEGACY_ADDRESS_KEY = 'yoga-p2p.databases';
  */
 export function storedStudios() {
 	try {
-		const raw = localStorage.getItem(STORAGE_KEY);
+		const raw = localStorage.getItem(scoped(STORAGE_KEY));
 		if (raw) return JSON.parse(raw);
 
-		const { registry, program } = JSON.parse(localStorage.getItem(LEGACY_ADDRESS_KEY) ?? '{}');
+		const { registry, program } = JSON.parse(
+			localStorage.getItem(scoped(LEGACY_ADDRESS_KEY)) ?? '{}'
+		);
 		return registry && program ? [{ registry, program }] : [];
 	} catch {
 		// Storage denied, or a value somebody else wrote. Treated as "no studios
@@ -79,7 +83,7 @@ export function rememberStudio({ registry, program }) {
 	}
 
 	try {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(studios));
+		localStorage.setItem(scoped(STORAGE_KEY), JSON.stringify(studios));
 	} catch {
 		// As above: this session keeps working, the next one starts over.
 	}
@@ -89,7 +93,7 @@ export function rememberStudio({ registry, program }) {
 
 export function forgetStudios() {
 	try {
-		localStorage.removeItem(STORAGE_KEY);
+		localStorage.removeItem(scoped(STORAGE_KEY));
 	} catch {
 		// nothing to clean up
 	}
