@@ -254,6 +254,53 @@ test.describe('QR handshake', () => {
 		// wake-lock.spec.js against a stubbed browser.
 	});
 
+	test('says what the background did to the connection', async ({ alice, bob }) => {
+		// A browser closes an RTCPeerConnection when it suspends the page and fires
+		// nothing doing it (w3c/webrtc-pc#2489). Switching to a messenger to paste
+		// an invitation is exactly that — so the most common way to share one is
+		// also the way to kill it, and until now the screen said nothing at all.
+		//
+		// Nobody can watch a display that is in the background, so the two readings
+		// are taken for them and only the difference is shown.
+		test.setTimeout(420_000);
+
+		await connectViaPaste(alice, bob);
+
+		// Playwright cannot background a page, and CDP does not help: this Chromium
+		// has no `Emulation.setPageVisibilityOverride`, and `Page.setWebLifecycleState`
+		// freezes without dispatching `visibilitychange`. Both were tried.
+		//
+		// So what is faked is the browser's *report* — `visibilityState` — and the
+		// event is dispatched for real. The handler then runs its own logic
+		// unmodified, which is the half worth testing. What this cannot show is the
+		// part that made the feature necessary: a real phone also closes the peer
+		// connection while away, and no emulation does that.
+		const setVisibility = (/** @type {string} */ value) =>
+			alice.evaluate((state) => {
+				Object.defineProperty(document, 'visibilityState', { value: state, configurable: true });
+				document.dispatchEvent(new Event('visibilitychange'));
+			}, value);
+
+		await setVisibility('hidden');
+		await setVisibility('visible');
+
+		// The connection survived here — loopback WebRTC does not die the way a
+		// phone's does, which m3-booking already records. So the assertion is that
+		// the app *reports on the spell*, not that it invents a failure: the quiet
+		// verdict is the honest one for a connection that is still up.
+		await expect(alice.getByTestId('away-report')).toHaveAttribute('data-verdict', 'kept', {
+			timeout: 30_000
+		});
+	});
+
+	test('warns before sending somebody away, not after', async ({ alice }) => {
+		// At the button that causes it. A warning on the way back is a post-mortem,
+		// and by then the invitation is already gone.
+		await openConnect(alice, 'alice');
+
+		await expect(alice.getByTestId('share-keep-open')).toBeVisible({ timeout: 90_000 });
+	});
+
 	test('shows all five readiness rows when STUN is in play', async ({ alice }) => {
 		// The rest of the suite runs with ?ice=host, so without this the five-row
 		// configuration - the whole of #26 - would never render in a test.
