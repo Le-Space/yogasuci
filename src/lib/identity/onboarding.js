@@ -21,7 +21,8 @@ import {
 	createPasskeyCredential,
 	didForCredential,
 	hasStoredPasskeyCredential,
-	recoverPasskeyCredential
+	recoverPasskeyCredential,
+	storedPasskeyCredential
 } from './passkey-identity.js';
 import { clearActiveAccount, setActiveAccount } from './account.js';
 
@@ -87,7 +88,17 @@ export async function bootIfIdentityKnown() {
 	if (!hasStoredPasskeyCredential()) return false;
 	if (get(studioReady)) return true;
 
-	await recoverIdentityAndBoot();
+	// The stored credential, not whatever the authenticator offers. Recovering
+	// asks for a *discoverable* credential, so on a device with two passkeys the
+	// platform picks — and a reload would then be able to sign in as the other
+	// account, which since storage is separated per account means the studio
+	// screens come up empty for no reason anybody could see (#82). It also makes
+	// this what its name says: no WebAuthn interaction on a reload.
+	await boot(async () => {
+		const credential = storedPasskeyCredential();
+		if (!credential) throw new Error('No passkey found on this device.');
+		return credential;
+	});
 	return true;
 }
 
