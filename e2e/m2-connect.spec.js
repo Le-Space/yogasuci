@@ -220,6 +220,40 @@ test.describe('QR handshake', () => {
 		});
 	}
 
+	test('keeps the screen awake while a code is on it, and lets it go after', async ({
+		alice,
+		bob
+	}) => {
+		// A phone lying on the counter with an invitation showing goes dark in
+		// fifteen seconds, while the other person is still getting their own phone
+		// out. Nothing about that is a connection fault; the screen simply left.
+		test.setTimeout(420_000);
+
+		await openConnect(alice, 'alice');
+
+		const status = alice.getByTestId('connection-status');
+
+		// The invitation is on screen from the moment this page opens.
+		await expect(status).toHaveAttribute('data-wake-lock', 'true', { timeout: 90_000 });
+
+		await connectViaPaste(alice, bob);
+
+		// The code came down when the connection came up, so there is nothing left
+		// to read — and a lock left behind would hold a studio's tablet awake for
+		// the rest of the day.
+		await expect(status).toHaveAttribute('data-wake-lock', 'false', { timeout: 90_000 });
+
+		// Asked for again the moment a code is back, which is the case a front desk
+		// hits every time somebody else walks up.
+		await alice.getByTestId('show-code').click();
+		await expect(status).toHaveAttribute('data-wake-lock', 'true');
+
+		// The attribute is what this screen *decided*. Whether the browser grants
+		// it is the platform's answer — headless Chromium exposes the API and
+		// refuses every request, having no screen — and that half is pinned in
+		// wake-lock.spec.js against a stubbed browser.
+	});
+
 	test('shows all five readiness rows when STUN is in play', async ({ alice }) => {
 		// The rest of the suite runs with ?ice=host, so without this the five-row
 		// configuration - the whole of #26 - would never render in a test.

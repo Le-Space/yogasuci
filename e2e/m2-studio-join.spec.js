@@ -172,6 +172,51 @@ test.describe('joining a studio', () => {
 			// while the screen was contradicting itself.
 		});
 	}
+
+	test('a student who joins a second studio still has the first', async ({ alice, carol, bob }) => {
+		// A student going to two studios is ordinary, and the app could not hold it:
+		// both addresses were written under the fixed keys `registry` and `program`,
+		// so the second join overwrote the first and last week's studio was gone
+		// after the next reload. #68.
+		//
+		// Asserted on what is remembered rather than on a screen, because that is
+		// what this step changes. A test against the UI would be testing the half
+		// that does not exist yet.
+		test.setTimeout(600_000);
+
+		await onboard(alice, 'alice');
+		await alice.getByTestId('studio-name').fill('Yoga Eggenfelden');
+		await alice.getByTestId('studio-save').click();
+
+		await onboard(carol, 'carol');
+		await carol.getByTestId('studio-name').fill('Sivananda München');
+		await carol.getByTestId('studio-save').click();
+
+		await connectViaPaste(alice, bob);
+		await expect(bob.getByTestId('join-status')).toContainText('Yoga Eggenfelden', READY);
+
+		// The student walks out of one studio and into the other.
+		await bob.getByTestId('hang-up').click();
+		await connectViaPaste(carol, bob);
+		await expect(bob.getByTestId('join-status')).toContainText('Sivananda München', READY);
+
+		const remembered = await bob.evaluate(() =>
+			JSON.parse(localStorage.getItem('yoga-p2p.studios') ?? '[]')
+		);
+
+		// And both are on the programme, one under the other. The studio just
+		// joined is the one this device works in, so it renders through the
+		// ordinary path; the earlier one appears underneath with its name over it.
+		await bob.getByTestId('nav-program').click();
+		await expect(bob.getByTestId('other-studio')).toHaveCount(1, REPLICATED);
+		await expect(bob.getByTestId('other-studio')).toContainText('Yoga Eggenfelden');
+
+		expect(remembered).toHaveLength(2);
+		// Distinct registries, not one written twice — the address is what the list
+		// is keyed on, and two entries pointing at one studio would look like
+		// success while being the old bug with extra steps.
+		expect(new Set(remembered.map((/** @type {any} */ s) => s.registry)).size).toBe(2);
+	});
 });
 
 /**

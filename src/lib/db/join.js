@@ -20,6 +20,8 @@ import { noteIntroduction as note } from './introduction-log.js';
 import { openStudentTickets } from './tickets.js';
 import { openProgram, programDbStore } from './program.js';
 import { rememberAddress } from './open.js';
+import { rememberStudio } from './studios.js';
+import { openJoinedStudios } from './open-studios.js';
 
 /**
  * Devices that have introduced themselves but are not registered yet.
@@ -229,8 +231,24 @@ export async function joinStudioFromPeer(peerId) {
 		rememberAddress('registry', announcement.registryAddress);
 		rememberAddress('program', announcement.programAddress);
 
+		// And into the list, which is what survives a second join. The two flat keys
+		// above still name the studio this device is *currently* working in — a
+		// counter is about exactly one — but they are overwritten every time, so on
+		// their own they lose the studio a student joined last week the moment that
+		// student pairs with another one. #68.
+		rememberStudio({
+			registry: announcement.registryAddress,
+			program: announcement.programAddress
+		});
+
 		await openRegistry({ address: announcement.registryAddress });
 		await openProgram({ address: announcement.programAddress });
+
+		// Now the others, and the order is what makes this simple: the studio just
+		// joined has become this device's own, so it is the one skipped, and what
+		// gets opened is everything joined before — which is exactly what would
+		// otherwise vanish from the screen until the next reload.
+		void openJoinedStudios();
 
 		joinStore.set({
 			state: 'joined',

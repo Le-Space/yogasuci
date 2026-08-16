@@ -25,6 +25,7 @@
 	} from '$lib/db/program.js';
 	import { generateSessions } from '$lib/program/sessions.js';
 	import { canEditProgram } from '$lib/db/join.js';
+	import { studiosStore } from '$lib/db/studios.js';
 	import { nextOccurrence } from '$lib/program/sessions.js';
 	import { bookingsStore, cancelBooking, requestBooking } from '$lib/db/bookings.js';
 	import { connectedPeersStore } from '$lib/p2p/node.js';
@@ -154,6 +155,32 @@
 	}
 
 	const today = new Date().toISOString().slice(0, 10);
+
+	/**
+	 * The classes another studio is currently running.
+	 *
+	 * Retired courses are filtered out here rather than at the source: a course is
+	 * deactivated and never deleted, because signed bookings point at it. Somebody
+	 * looking at another studio's programme wants what is on, not the archive.
+	 *
+	 * @param {{ courses: any[] }} entry
+	 */
+	function activeCourses(entry) {
+		return entry.courses.filter((course) => course.active !== false);
+	}
+
+	/**
+	 * A course carries a location id; the name for it lives in *that* studio's
+	 * registry. Looked up per studio rather than through `$locationsStore`, which
+	 * holds this device's own studio and would name the wrong room — or nothing.
+	 *
+	 * @param {{ locations: any[] }} entry
+	 * @param {string} locationId
+	 */
+	function otherStudioLocation(entry, locationId) {
+		const location = entry.locations.find((candidate) => candidate._id === locationId);
+		return location ? localized(location.name, getLocale()) : locationId;
+	}
 
 	/**
 	 * Book a course.
@@ -850,4 +877,52 @@
 		happens once.
 	-->
 	<SetupImport />
+
+	<!--
+		The other studios this device belongs to, one under the other rather than
+		behind a selector.
+
+		A student with two studios has two, not twelve — scrolling is cheaper than
+		switching, and it means they see what is on this week without a single tap.
+		A selector would hide exactly that and introduce the question "which one am
+		I in", which does not otherwise exist. #68.
+
+		Read-only by construction: these registries belong to somebody else and
+		their access controller refuses this device's writes whatever the screen
+		offers. So no forms and no booking here — booking needs a connection to that
+		studio, and this list is what a student has between visits.
+	-->
+	{#if $studiosStore.length > 0}
+		<section class="mt-10" data-testid="other-studios">
+			<p class="text-sm text-muted">{m.program_other_studios_intro()}</p>
+
+			{#each $studiosStore as entry (entry.registry)}
+				<article
+					class="mt-6 rounded-card border border-border bg-surface p-6"
+					data-testid="other-studio"
+					data-registry={entry.registry}
+				>
+					<h2 class="eyebrow">{m.program_other_studio({ studio: entry.studio?.name ?? '…' })}</h2>
+
+					{#if activeCourses(entry).length === 0}
+						<p class="mt-3 text-sm text-muted">{m.course_none()}</p>
+					{:else}
+						<ul class="mt-3 grid gap-2" data-testid="other-studio-courses">
+							{#each activeCourses(entry) as course (course._id)}
+								<li
+									class="flex items-baseline gap-3 border-b border-border pb-2"
+									data-course-id={course._id}
+								>
+									<span class="font-medium">{localized(course.title, getLocale())}</span>
+									<span class="text-sm text-muted"
+										>{otherStudioLocation(entry, course.locationId)}</span
+									>
+								</li>
+							{/each}
+						</ul>
+					{/if}
+				</article>
+			{/each}
+		</section>
+	{/if}
 </StudioGate>

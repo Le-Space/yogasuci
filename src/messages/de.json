@@ -221,6 +221,8 @@
 	"pending_device_role_teacher": "Lehrkraft",
 	"pending_devices_none": "Kein Gerät wartet. Verbinde zuerst ein Gerät über „Verbinden“.",
 	"pending_devices_title": "Geräte warten auf Freigabe",
+	"program_other_studio": "Programm von „{studio}\"",
+	"program_other_studios_intro": "Auch diese Studios besuchst du. Buchen kannst du dort, sobald ihr verbunden seid.",
 	"program_title": "Programm",
 	"qr_peers_closed": "beendet",
 	"qr_peers_connected": "verbunden",
