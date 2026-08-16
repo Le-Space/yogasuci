@@ -10,6 +10,7 @@ import { get, writable } from 'svelte/store';
 import { OrbitDBAccessController } from '@orbitdb/core';
 
 import { orbitdbStore } from '../p2p/node.js';
+import { scoped } from '../identity/account.js';
 
 /**
  * Where this device's database addresses are remembered.
@@ -21,10 +22,22 @@ import { orbitdbStore } from '../p2p/node.js';
  */
 const ADDRESS_STORAGE_KEY = 'yoga-p2p.databases';
 
+/**
+ * Per account, not per device.
+ *
+ * A device can hold a studio passkey and a personal one, and until this was
+ * scoped the second signed-in account found the first one's registry here and
+ * opened it as its own — the studio's owner check then answered no on the very
+ * device that had created it (#82).
+ */
+function addressKey() {
+	return scoped(ADDRESS_STORAGE_KEY);
+}
+
 /** @returns {Record<string, string>} */
 export function storedAddresses() {
 	try {
-		return JSON.parse(localStorage.getItem(ADDRESS_STORAGE_KEY) ?? '{}');
+		return JSON.parse(localStorage.getItem(addressKey()) ?? '{}');
 	} catch {
 		return {};
 	}
@@ -36,10 +49,7 @@ export function storedAddresses() {
  */
 export function rememberAddress(key, address) {
 	try {
-		localStorage.setItem(
-			ADDRESS_STORAGE_KEY,
-			JSON.stringify({ ...storedAddresses(), [key]: address })
-		);
+		localStorage.setItem(addressKey(), JSON.stringify({ ...storedAddresses(), [key]: address }));
 	} catch {
 		// Storage blocked — the database still works for this session, it just
 		// will not be found again after a reload.
@@ -48,7 +58,7 @@ export function rememberAddress(key, address) {
 
 export function forgetAddresses() {
 	try {
-		localStorage.removeItem(ADDRESS_STORAGE_KEY);
+		localStorage.removeItem(addressKey());
 	} catch {
 		// nothing to clean up
 	}

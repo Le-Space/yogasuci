@@ -200,9 +200,14 @@ test.describe('joining a studio', () => {
 		await connectViaPaste(carol, bob);
 		await expect(bob.getByTestId('join-status')).toContainText('Sivananda München', READY);
 
-		const remembered = await bob.evaluate(() =>
-			JSON.parse(localStorage.getItem('yoga-p2p.studios') ?? '[]')
-		);
+		// Found by prefix rather than under a fixed key: this list belongs to the
+		// account, not to the device, so it lives under `yoga-p2p.studios` or
+		// `yoga-p2p.studios:<did>` depending on whether this profile predates
+		// accounts existing (#82). Which of the two is not what this test is about.
+		const remembered = await bob.evaluate(() => {
+			const key = Object.keys(localStorage).find((name) => name.startsWith('yoga-p2p.studios'));
+			return JSON.parse((key ? localStorage.getItem(key) : null) ?? '[]');
+		});
 
 		// And both are on the programme, one under the other. The studio just
 		// joined is the one this device works in, so it renders through the

@@ -106,6 +106,46 @@ export async function recoverPasskeyCredential() {
 	return loadWebAuthnCredential(CREDENTIAL_STORAGE_KEY);
 }
 
+/**
+ * The DID a credential resolves to.
+ *
+ * Not a property of the credential, which is the trap: `credential.did` reads
+ * as though it were one and is undefined, so a boot that trusted it named this
+ * device's storage after nothing at all. The provider derives the DID from the
+ * credential's public key, and `getId()` — the value `isOwnStudio()` later
+ * compares against — is this same call. Asking for it here is what lets the
+ * account be known before the node starts, which the OrbitDB stores need
+ * because they are named for it (#82).
+ *
+ * @param {any} credential
+ * @returns {Promise<string>}
+ */
+export async function didForCredential(credential) {
+	return /** @type {any} */ (WebAuthnDIDProvider).createDID(credential);
+}
+
+/**
+ * The credential this browser profile is already signed in as, with no
+ * WebAuthn interaction at all.
+ *
+ * `recoverPasskeyCredential` asks the *authenticator* for a discoverable
+ * credential, which is right when somebody is choosing an identity and wrong on
+ * a reload: with two passkeys registered for this site the platform decides
+ * which one comes back, so reloading could sign the device in as the other
+ * account — and with storage now separated per account, that means the studio
+ * screens quietly come up empty (#82). A reload has to be the account that was
+ * already signed in, and only a deliberate act may change it.
+ *
+ * @returns {any | null}
+ */
+export function storedPasskeyCredential() {
+	try {
+		return loadWebAuthnCredential(CREDENTIAL_STORAGE_KEY);
+	} catch {
+		return null;
+	}
+}
+
 /** True when a serialized credential exists in this browser profile. */
 export function hasStoredPasskeyCredential() {
 	try {

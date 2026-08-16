@@ -1,5 +1,7 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"account_switch": "Konto wechseln",
+	"account_switch_hint": "Mit einem anderen Passkey auf diesem Gerät anmelden — etwa dem persönlichen statt dem des Studios.",
 	"app_name": "Yogasūcī (योगसूची)",
 	"app_tagline": "Mehr Privatsphäre — ohne Mittelsmänner",
 	"booking_book": "Buchen",
