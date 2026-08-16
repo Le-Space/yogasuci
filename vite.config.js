@@ -63,6 +63,18 @@ export default defineConfig({
 			strategies: 'generateSW',
 			registerType: 'autoUpdate',
 			manifest: false, // static/manifest.webmanifest is the source of truth
+			// The plugin's own copy of the setting, under `kit` — it does not read
+			// `src/routes/+layout.js`, and it is the last argument its manifest
+			// transform receives. Without it the precache stored `program` while
+			// every link in the app points at `/program/`, so the document sat in
+			// the cache under a name nothing ever requested and an offline reload on
+			// a subpage failed outright. #72.
+			//
+			// This is also why writing our own `manifestTransforms` was the wrong
+			// lever: the plugin guards with `if (!config.manifestTransforms)`, so
+			// supplying one *replaces* its own rewrite rather than adding to it —
+			// which is how that attempt produced raw `prerendered/pages/…` paths.
+			kit: { trailingSlash: 'always' },
 			workbox: {
 				globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,woff2}'],
 				// Helia/libp2p bundles are large; the default 2 MiB cap would drop them.

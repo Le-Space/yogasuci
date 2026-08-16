@@ -186,13 +186,20 @@ test.describe('app shell', () => {
 			// doing nothing at all.
 			await expect(alice).toHaveURL(/\/program/, { timeout: 90_000 });
 
-			// Not asserted here: a *reload* on this subpage while offline. It does not
-			// work, and pretending otherwise in a test would be worse than the gap.
+			// And a reload *there* — the case ten unrelated tests caught while this
+			// one was busy asserting something both screens satisfy.
 			//
-			// The precache stores the route as `program` while the app, with
-			// `trailingSlash: 'always'`, asks for `/program/` — so the document is
-			// there under a name nothing requests. Online it does not show, because
-			// the miss falls through to the network. See #72.
+			// It needs two things that were each wrong on their own. Workbox's
+			// default navigation fallback answered every navigation with the
+			// precached "/" document, so a refresh on the programme returned the
+			// front page. And with that gone, the precache stored the route as
+			// `program` while the app asks for `/program/` — the document was there
+			// under a name nothing requested (#72).
+			await alice.reload();
+
+			await expect(alice).toHaveURL(/\/program/);
+			await expect(alice.getByTestId('start-intro')).toHaveCount(0);
+			await expect(alice.getByTestId('onboarding')).toBeVisible({ timeout: 90_000 });
 		} finally {
 			// Restored even on failure: the context is shared with nothing here, but
 			// a test that leaves the network down is a test that poisons its file.
