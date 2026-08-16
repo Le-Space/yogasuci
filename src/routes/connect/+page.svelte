@@ -37,8 +37,9 @@
 	import { buildLink, readLink } from '$lib/p2p/invite.js';
 	import { iceMode, rtcConfiguration } from '$lib/p2p/libp2p-config.js';
 	import { setShortCodeEnabled, shortCodeEnabled } from '$lib/p2p/short-code.js';
+	import { syncWakeLock } from '$lib/p2p/wake-lock.js';
 	import { createHandoff } from '$lib/p2p/handoff.js';
-	import { introduceToPeer, joinStore, joinStudioFromPeer } from '$lib/db/join.js';
+	import { canEditProgram, introduceToPeer, joinStore, joinStudioFromPeer } from '$lib/db/join.js';
 	import { studioStore } from '$lib/db/registry.js';
 	import * as m from '$lib/paraglide/messages.js';
 
@@ -132,6 +133,48 @@
 		codeHidden = false;
 		scanAccepted = false;
 	}
+
+	/**
+	 * Whether the screen has something on it that somebody is trying to read.
+	 *
+	 * A phone lying on the counter with an invitation showing goes dark in fifteen
+	 * seconds, while the other person is still getting their own phone out — and a
+	 * scanner that dims mid-aim loses the frame it was about to catch. Neither is a
+	 * connection fault; the screen simply left.
+	 *
+	 * Both sides of the same moment, so both count: the code being displayed and
+	 * the camera being open.
+	 */
+	// A list rather than `step !== 'handed-over'`: at this point in the file
+	// TypeScript has narrowed `step` to its initial value, so comparing it to any
+	// other member reads as a comparison that can never be true. `includes` on a
+	// plain array asks the same question without the narrowing.
+	const STEPS_WITHOUT_A_CODE = ['handed-over'];
+
+	let screenInUse = $derived(
+		scanning || (Boolean(payload) && !codeHidden && !STEPS_WITHOUT_A_CODE.includes(step))
+	);
+
+	$effect(() => {
+		syncWakeLock(screenInUse);
+	});
+
+	onMount(() => {
+		// A browser drops the lock whenever the page stops being visible, and does
+		// not hand it back on return. Without this the screen stays awake exactly
+		// until somebody glances at another app — which is the moment they are most
+		// likely to come back to a counter and find it dark.
+		const onVisible = () => syncWakeLock(screenInUse);
+
+		document.addEventListener('visibilitychange', onVisible);
+		return () => document.removeEventListener('visibilitychange', onVisible);
+	});
+
+	onDestroy(() => {
+		// Leaving this screen means nothing here needs reading any more. A lock left
+		// behind would hold a studio's tablet awake for the rest of the day.
+		syncWakeLock(false);
+	});
 
 	/** @type {HTMLVideoElement | undefined} */
 	// Typed loosely on purpose: svelte-check has no element interface for
@@ -442,10 +485,22 @@
 		// not this device already belongs to a studio.
 		await introduceToPeer(remotePeerId);
 
-		// Joining is the other half, and only for a device that has not been set
-		// up: a studio owner connecting to a student must not be pulled into the
-		// student's empty studio.
-		if ($studioStore?.name) return;
+		// Joining is the other half, and the question is not "does this device
+		// already have a studio" but "does it *run* one".
+		//
+		// It used to be the former, and that refused the ordinary case: a student
+		// who goes to two studios could pair with the second but never joined it,
+		// because the first had filled `studioStore`. What the guard is actually
+		// for is the opposite direction — an owner or a front desk connecting to a
+		// student must not be pulled into that student's empty studio — and
+		// `canEditProgram()` answers that from the registry — but only together
+		// with a named studio, and each half alone is wrong. `canEditProgram()`
+		// says yes on a device with no studio at all, because `isOwnStudio()`
+		// treats an unnamed studio as this device's own; that is right just after
+		// somebody creates one and useless as a test for "is set up". And a name on
+		// its own was the old guard, which is precisely what locked the student
+		// out. #68.
+		if ($studioStore?.name && canEditProgram()) return;
 
 		try {
 			await joinStudioFromPeer(remotePeerId);
@@ -645,7 +700,23 @@
 		</button>
 	{/if}
 
-	<p class="mt-2 text-sm" data-testid="connection-status" data-step={step}>
+	<!--
+		`data-wake-lock` reports what this screen *decided*, not what the browser
+		granted. Two reasons, and both matter. A headless browser exposes the API
+		and then refuses every request, having no screen to keep awake, so a test
+		on the granted lock would be testing the platform. And `wakeLockState()` is
+		a plain function call, which Svelte does not track — reading it here would
+		render once and then never change.
+
+		That the module honours the decision is the unit tests' job, where the
+		browser can be stubbed into answering.
+	-->
+	<p
+		class="mt-2 text-sm"
+		data-testid="connection-status"
+		data-step={step}
+		data-wake-lock={screenInUse}
+	>
 		{#if step === 'connected'}
 			<!-- A count, not the first peer id. With three devices connected, naming
 			     one of them and staying silent about the others was the bug: the

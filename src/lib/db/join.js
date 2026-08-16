@@ -20,6 +20,7 @@ import { noteIntroduction as note } from './introduction-log.js';
 import { openStudentTickets } from './tickets.js';
 import { openProgram, programDbStore } from './program.js';
 import { rememberAddress } from './open.js';
+import { rememberStudio } from './studios.js';
 
 /**
  * Devices that have introduced themselves but are not registered yet.
@@ -228,6 +229,16 @@ export async function joinStudioFromPeer(peerId) {
 		// silently creating a fresh, empty one under this device's identity.
 		rememberAddress('registry', announcement.registryAddress);
 		rememberAddress('program', announcement.programAddress);
+
+		// And into the list, which is what survives a second join. The two flat keys
+		// above still name the studio this device is *currently* working in — a
+		// counter is about exactly one — but they are overwritten every time, so on
+		// their own they lose the studio a student joined last week the moment that
+		// student pairs with another one. #68.
+		rememberStudio({
+			registry: announcement.registryAddress,
+			program: announcement.programAddress
+		});
 
 		await openRegistry({ address: announcement.registryAddress });
 		await openProgram({ address: announcement.programAddress });
