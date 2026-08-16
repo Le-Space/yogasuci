@@ -12,6 +12,7 @@ import { listenForDevices, serveStudio } from '../p2p/studio-protocol.js';
 import { describeOwnStudio, rememberPendingDevice } from '../db/join.js';
 import { openRegistry, registryDbStore } from '../db/registry.js';
 import { openProgram, programDbStore } from '../db/program.js';
+import { openJoinedStudios } from '../db/open-studios.js';
 import { grantStudioDevices, openOwnBookings } from '../db/bookings.js';
 import { openOwnTickets, ticketsDbStore } from '../db/tickets.js';
 import { devicesStore, studioStore } from '../db/registry.js';
@@ -107,6 +108,12 @@ async function boot(obtainCredential) {
 		// Every device keeps its own bookings, students and studio alike: a studio
 		// device that also books classes is a person, not a special case.
 		await openOwnBookings();
+
+		// The other studios a student has joined, after this device's own so that
+		// one can be skipped rather than opened twice. Deliberately not awaited: a
+		// studio that is slow to replicate must not hold up a screen somebody can
+		// already use, and each publishes itself as it lands. #68.
+		void openJoinedStudios();
 
 		// A device approved after this student paired must still be able to
 		// confirm their bookings, so the grants follow the registry rather than a

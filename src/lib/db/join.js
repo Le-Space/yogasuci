@@ -21,6 +21,7 @@ import { openStudentTickets } from './tickets.js';
 import { openProgram, programDbStore } from './program.js';
 import { rememberAddress } from './open.js';
 import { rememberStudio } from './studios.js';
+import { openJoinedStudios } from './open-studios.js';
 
 /**
  * Devices that have introduced themselves but are not registered yet.
@@ -242,6 +243,12 @@ export async function joinStudioFromPeer(peerId) {
 
 		await openRegistry({ address: announcement.registryAddress });
 		await openProgram({ address: announcement.programAddress });
+
+		// Now the others, and the order is what makes this simple: the studio just
+		// joined has become this device's own, so it is the one skipped, and what
+		// gets opened is everything joined before — which is exactly what would
+		// otherwise vanish from the screen until the next reload.
+		void openJoinedStudios();
 
 		joinStore.set({
 			state: 'joined',

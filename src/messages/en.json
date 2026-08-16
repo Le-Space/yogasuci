@@ -221,6 +221,8 @@
 	"pending_device_role_teacher": "Teacher",
 	"pending_devices_none": "No device is waiting. Connect one first via “Connect”.",
 	"pending_devices_title": "Devices awaiting approval",
+	"program_other_studio": "Programme of “{studio}”",
+	"program_other_studios_intro": "You go to these studios too. Booking there works once you are connected.",
 	"program_title": "Programme",
 	"qr_peers_closed": "closed",
 	"qr_peers_connected": "connected",

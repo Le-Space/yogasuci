@@ -204,6 +204,13 @@ test.describe('joining a studio', () => {
 			JSON.parse(localStorage.getItem('yoga-p2p.studios') ?? '[]')
 		);
 
+		// And both are on the programme, one under the other. The studio just
+		// joined is the one this device works in, so it renders through the
+		// ordinary path; the earlier one appears underneath with its name over it.
+		await bob.getByTestId('nav-program').click();
+		await expect(bob.getByTestId('other-studio')).toHaveCount(1, REPLICATED);
+		await expect(bob.getByTestId('other-studio')).toContainText('Yoga Eggenfelden');
+
 		expect(remembered).toHaveLength(2);
 		// Distinct registries, not one written twice — the address is what the list
 		// is keyed on, and two entries pointing at one studio would look like
