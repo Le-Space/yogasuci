@@ -1,6 +1,6 @@
 <script>
 	import '$lib/styles/tokens.css';
-	import { resolve } from '$app/paths';
+	import { base, resolve } from '$app/paths';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import LanguageSwitch from '$lib/components/LanguageSwitch.svelte';
 	import OmMark from '$lib/components/OmMark.svelte';
@@ -9,9 +9,49 @@
 	import { getLocale } from '$lib/paraglide/runtime.js';
 	import { canEditProgram } from '$lib/db/join.js';
 	import { devicesStore, studioStore } from '$lib/db/registry.js';
+	import { onMount } from 'svelte';
 	import * as m from '$lib/paraglide/messages.js';
 
 	let { children } = $props();
+
+	/**
+	 * Turn the service worker on.
+	 *
+	 * It was built and never used. `vite-pwa` emitted `sw.js` with a 69-file
+	 * precache manifest and `registerSW.js` beside it, and nothing ever loaded
+	 * either — so the app had a complete offline cache it never registered, and
+	 * opening it without a network showed the browser's error page.
+	 *
+	 * Nothing pointed at it. The manifest was right, the icons resolved, and the
+	 * installability test was green, because all of that is about *installing* the
+	 * app rather than about running it offline. The bit that makes it an offline
+	 * app is this call, and it was missing.
+	 *
+	 * `@vite-pwa/sveltekit` does not inject the registration the way the plain vite
+	 * plugin does, so the app has to do it. Not through `virtual:pwa-register`
+	 * though, which is the documented route and broke the build: importing it puts
+	 * the module in the SSR graph, the plugin then generates the worker during the
+	 * SSR pass — which on CI runs *first* — and the precache glob matches nothing
+	 * because no client asset exists yet. It passed locally only because the two
+	 * passes happened to run the other way round here.
+	 *
+	 * One plain call instead, with nothing for the bundler to reorder. Nothing is
+	 * lost with it: the generated worker already carries `skipWaiting` and
+	 * `clientsClaim`, so it takes control on this load rather than the next — which
+	 * is the case that matters, a device seeing the app once and then being used
+	 * somewhere with no signal. `registerSW()` adds update prompts this app does
+	 * not show.
+	 */
+	onMount(() => {
+		if (!('serviceWorker' in navigator)) return;
+
+		navigator.serviceWorker.register(`${base}/sw.js`).catch((error) => {
+			// Not a reason to break the page: it only means this device has no
+			// offline copy. Said out loud rather than swallowed, because a silent
+			// failure here is precisely how the worker went unregistered for months.
+			console.warn('Service worker registration failed:', error);
+		});
+	});
 
 	// Route ids, resolved at the href. resolve() rather than a literal path is
 	// what keeps the app working when it is served from a subpath — which is

@@ -68,6 +68,18 @@
 			{/if}
 
 			<form class="mt-4 grid max-w-md gap-3" onsubmit={create}>
+				<!--
+					The first field is not a label, whatever it looks like: the provider
+					builds the WebAuthn user handle out of it, and an authenticator
+					replaces a credential when the handle matches. Two people creating a
+					passkey on one front-desk device under the same name means the second
+					destroys the first, silently.
+
+					So the hint says so. It is the only technical sentence left on this
+					screen and it stays until the handle is random rather than typed —
+					Le-Space/orbitdb-identity-provider-webauthn-did#45, after which this
+					field is genuinely just a name and the two can become one.
+				-->
 				<label class="grid gap-1 text-sm">
 					{m.onboarding_user_id()}
 					<input
@@ -75,8 +87,12 @@
 						bind:value={userId}
 						required
 						autocomplete="username"
+						aria-describedby="user-id-hint"
 						class="rounded-control border p-2"
 					/>
+					<span id="user-id-hint" class="text-xs text-muted" data-testid="onboarding-user-id-hint">
+						{m.onboarding_user_id_hint()}
+					</span>
 				</label>
 
 				<label class="grid gap-1 text-sm">
@@ -85,8 +101,12 @@
 						data-testid="onboarding-display-name"
 						bind:value={displayName}
 						required
+						aria-describedby="display-name-hint"
 						class="rounded-control border p-2"
 					/>
+					<span id="display-name-hint" class="text-xs text-muted">
+						{m.onboarding_display_name_hint()}
+					</span>
 				</label>
 
 				<button

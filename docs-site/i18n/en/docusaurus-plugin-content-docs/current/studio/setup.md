@@ -14,8 +14,14 @@ On first opening, the app asks for a **passkey**. Not a password — a key your
 device creates and never hands over. You unlock it the way you unlock the device:
 fingerprint, face or PIN.
 
-You give an identifier and a display name. **Do not use your private email
-address** unless you have to. "frontdesk-oldtown" is plenty and gives away less.
+You give a name — an email address is not needed, and would be the worse choice
+anyway: "frontdesk-oldtown" is plenty and gives away less.
+
+**One point that matters on a counter device.** The first name is more than a
+label: it decides which key is meant. If two people create a key with the same
+name on the **same** device, the second replaces the first — no question asked,
+and the first one's passes are out of reach. So on a shared device, pick a name
+nobody there has used. On your own phone it makes no difference.
 
 ![Creating a passkey](/img/screens/en/onboarding.png)
 

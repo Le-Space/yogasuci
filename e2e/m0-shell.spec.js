@@ -63,6 +63,19 @@ test.describe('app shell', () => {
 
 		await expect(alice.getByTestId('onboarding-create-warning')).toBeVisible({ timeout: 90_000 });
 		await expect(alice.getByTestId('recover-identity')).toBeVisible();
+
+		// The other half of the same hazard, and the one nobody could guess from the
+		// screen: the first field becomes the WebAuthn handle, so two people picking
+		// the same name on one front-desk device means the second replaces the
+		// first. The hint carries that — tied to the input rather than floating near
+		// it, because a warning a screen reader never reaches is not a warning.
+		const hint = alice.getByTestId('onboarding-user-id-hint');
+
+		await expect(hint).toBeVisible();
+		await expect(alice.getByTestId('onboarding-user-id')).toHaveAttribute(
+			'aria-describedby',
+			/** @type {string} */ (await hint.getAttribute('id'))
+		);
 	});
 
 	test('nothing scrolls sideways on a phone, with or without the counter screens', async ({
@@ -128,6 +141,62 @@ test.describe('app shell', () => {
 				new URL(icon.src, new URL(manifestHref ?? '/', alice.url())).pathname
 			);
 			expect(ok, `icon ${icon.src}`).toBe(true);
+		}
+	});
+
+	test('opens with no network at all', async ({ alice }) => {
+		// The claim the whole app rests on: there is no server, so being offline
+		// should cost nothing but company. Nothing proved it until now — the service
+		// worker could stop precaching tomorrow and every other test would stay
+		// green, because they all run with a network.
+		//
+		// `setOffline` is the right tool *here*, though m3-booking warns it is not
+		// what it looks like: what survives it is an established WebRTC data channel
+		// over loopback. HTTP requests it blocks, which is exactly what this needs.
+		test.setTimeout(240_000);
+
+		await alice.goto('/?ice=host');
+
+		// The worker has to be in charge before cutting the network, or the reload
+		// goes to a server that is no longer there and this proves nothing.
+		await alice.waitForFunction(() => navigator.serviceWorker.controller !== null, undefined, {
+			timeout: 90_000
+		});
+
+		await alice.context().setOffline(true);
+
+		try {
+			await alice.reload();
+			await expect(alice.getByTestId('start-intro')).toBeVisible({ timeout: 90_000 });
+
+			// A second screen, because precaching the entry page and nothing else
+			// would pass the line above and strand anybody who moves.
+			//
+			// Reached by clicking, not by `goto`, and that is the honest path rather
+			// than a convenience: once the shell is up SvelteKit routes in the page,
+			// so a nav click needs only chunks that are already cached. A fresh
+			// document load would also have to match the precache by URL — and
+			// Workbox matches the query string too, so `/program/?ice=host` misses an
+			// entry stored as `program`. Worth knowing, and not what a person does.
+			await alice.getByTestId('nav-program').click();
+
+			// The URL, not the gate. `onboarding` renders on both screens, so
+			// asserting it here proved only that *a* page was up — the first version
+			// of this test did exactly that and would have passed with the click
+			// doing nothing at all.
+			await expect(alice).toHaveURL(/\/program/, { timeout: 90_000 });
+
+			// Not asserted here: a *reload* on this subpage while offline. It does not
+			// work, and pretending otherwise in a test would be worse than the gap.
+			//
+			// The precache stores the route as `program` while the app, with
+			// `trailingSlash: 'always'`, asks for `/program/` — so the document is
+			// there under a name nothing requests. Online it does not show, because
+			// the miss falls through to the network. See #72.
+		} finally {
+			// Restored even on failure: the context is shared with nothing here, but
+			// a test that leaves the network down is a test that poisons its file.
+			await alice.context().setOffline(false);
 		}
 	});
 

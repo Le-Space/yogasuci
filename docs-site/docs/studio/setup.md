@@ -14,9 +14,15 @@ Beim ersten Öffnen fragt die App nach einem **Passkey**. Das ist kein Passwort 
 es ist ein Schlüssel, den euer Gerät erzeugt und niemals herausgibt. Entsperrt
 wird er so, wie ihr das Gerät entsperrt: Fingerabdruck, Gesicht oder PIN.
 
-Ihr gebt eine Kennung und einen Anzeigenamen an. **Nehmt nicht eure private
-E-Mail-Adresse**, wenn es nicht sein muss. „rezeption-altstadt" reicht völlig und
-verrät weniger.
+Ihr gebt einen Namen an — eine E-Mail-Adresse braucht es nicht, und sie wäre auch
+die schlechtere Wahl: „rezeption-altstadt" reicht völlig und verrät weniger.
+
+**Ein Punkt, der auf einem Theken-Gerät zählt.** Der erste Name ist mehr als eine
+Beschriftung: Er entscheidet, welcher Schlüssel gemeint ist. Legen zwei Personen
+auf **demselben** Gerät einen Schlüssel mit demselben Namen an, ersetzt der zweite
+den ersten — ohne Nachfrage, und die Karten des ersten sind nicht mehr erreichbar.
+Auf einem geteilten Gerät also einen Namen wählen, den dort noch niemand benutzt
+hat. Auf dem eigenen Telefon spielt es keine Rolle.
 
 ![Passkey anlegen](/img/screens/de/onboarding.png)
 
