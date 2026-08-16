@@ -166,16 +166,69 @@
 		syncWakeLock(screenInUse);
 	});
 
-	onMount(() => {
-		// A browser drops the lock whenever the page stops being visible, and does
-		// not hand it back on return. Without this the screen stays awake exactly
-		// until somebody glances at another app — which is the moment they are most
-		// likely to come back to a counter and find it dark.
-		const onVisible = () => syncWakeLock(screenInUse);
+	/**
+	 * What the connection looked like on the way out, and on the way back.
+	 *
+	 * A browser closes an RTCPeerConnection when it suspends the page, and fires
+	 * nothing at all doing it (w3c/webrtc-pc#2489) — measured upstream at a couple
+	 * of seconds on Android. Switching to a messenger to paste an invitation is
+	 * exactly that, so the most common way to share one is also the way to kill it.
+	 *
+	 * Nobody can watch a screen that is in the background, which is why this is a
+	 * record rather than a warning: the two readings are taken automatically and
+	 * the difference between them is the whole story. It cannot repair anything —
+	 * once the browser has closed the connection it is gone — it can only stop the
+	 * failure being invisible.
+	 *
+	 * Cast at the initialiser rather than annotated above it: with a bare `null`
+	 * start, TypeScript narrows the variable to `never` at every later read, and
+	 * the derived below cannot see the fields at all.
+	 *
+	 * @type {{ hadPeers: number, back: { hasPeers: number } | null } | null}
+	 */
+	let awaySpell = $state(
+		/** @type {{ hadPeers: number, back: { hasPeers: number } | null } | null} */ (null)
+	);
 
-		document.addEventListener('visibilitychange', onVisible);
-		return () => document.removeEventListener('visibilitychange', onVisible);
+	onMount(() => {
+		const onVisibilityChange = () => {
+			// A browser drops the wake lock whenever the page stops being visible and
+			// does not hand it back. Without this the screen stays awake exactly
+			// until somebody glances at another app — the moment they are most likely
+			// to come back to a counter and find it dark.
+			syncWakeLock(screenInUse);
+
+			if (document.visibilityState === 'hidden') {
+				awaySpell = { hadPeers: $connectedPeersStore.length, back: null };
+				return;
+			}
+
+			// Only if there is a departure to compare against: becoming visible
+			// without having gone away is a normal event on load in some browsers,
+			// and reporting on it would be reporting on nothing.
+			if (awaySpell) awaySpell = { ...awaySpell, back: { hasPeers: $connectedPeersStore.length } };
+		};
+
+		document.addEventListener('visibilitychange', onVisibilityChange);
+		return () => document.removeEventListener('visibilitychange', onVisibilityChange);
 	});
+
+	/**
+	 * Said only when the two readings differ for the worse.
+	 *
+	 * A spell in the background that cost nothing is worth a quiet line rather than
+	 * silence — somebody who was warned before leaving should be told the warning
+	 * did not come true. A spell that cost the connection gets the loud one.
+	 */
+	let awayVerdict = $derived(
+		!awaySpell?.back
+			? null
+			: awaySpell.hadPeers > 0 && awaySpell.back.hasPeers === 0
+				? 'lost'
+				: awaySpell.hadPeers > 0
+					? 'kept'
+					: null
+	);
 
 	onDestroy(() => {
 		// Leaving this screen means nothing here needs reading any more. A lock left
@@ -785,6 +838,22 @@
 		caused by a successful read rather than by the invitation renewing itself.
 		Gone once connected, where the connection is the better news.
 	-->
+	<!--
+		What happened while nobody could look. The two readings are taken by the
+		visibility handler; this is only the difference between them, and it says
+		whose doing it was — a person who comes back to a dead connection otherwise
+		blames the other device, or the app, or the code they just held up.
+	-->
+	{#if awayVerdict}
+		<p
+			class="mt-2 text-sm {awayVerdict === 'lost' ? 'text-warning' : 'text-muted'}"
+			data-testid="away-report"
+			data-verdict={awayVerdict}
+		>
+			{awayVerdict === 'lost' ? m.connect_away_lost() : m.connect_away_kept()}
+		</p>
+	{/if}
+
 	{#if scanAccepted && (step === 'replying' || step === 'connecting')}
 		<p class="mt-2 text-sm text-success" data-testid="scan-accepted">
 			{m.connect_scan_accepted()}
@@ -946,6 +1015,20 @@
 					{step === 'replying' ? m.connect_share_reply() : m.connect_share_invite()}
 				</button>
 			</div>
+
+			<!--
+				At the button that sends somebody away, not on their return: a warning
+				after the fact is a post-mortem.
+
+				It names the *action* rather than the browser. Upstream keeps a list of
+				which browsers hold a suspended connection for how long, and that list
+				is exactly the kind of claim that is wrong after the next release —
+				AGENTS.md §2 says as much about browser-dependent behaviour. What is
+				reliably true is that leaving costs the invitation.
+			-->
+			<p class="mt-3 max-w-md text-sm text-muted" data-testid="share-keep-open">
+				{m.connect_share_keep_open()}
+			</p>
 
 			<!--
 				Said at the button that is about to fail, not in the readiness panel
