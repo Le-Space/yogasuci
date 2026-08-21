@@ -14,9 +14,10 @@ welche übersetzt sind und welche nicht, steht in `docs/en/README.md`.
 
 ## Projekt
 
-P2P-PWA für Yogastudio-Buchungen. Kein Relay, kein Server, kein
-Backend: Signalisierung nur über `@le-space/libp2p-webrtc-qr` (QR) und
-Copy-&-Paste-SDP. Architektur und Tasks: `docs/PLAN.md` (verbindlich).
+P2P-PWA für Yogastudio-Buchungen. Kein Server, kein Backend. Signalisierung
+standardmäßig nur über `@le-space/libp2p-webrtc-qr` (QR) und Copy-&-Paste-SDP;
+ein Relay ist zuschaltbar, aber nie voreingestellt — siehe „Harte Regeln".
+Architektur und Tasks: `docs/PLAN.md` (verbindlich).
 
 ## Benennung
 
@@ -39,8 +40,16 @@ Bezeichner bewusst weiterhin `yoga-p2p` heißen und warum, steht in
 
 - Toolchain: pnpm, Node ≥ 22, SvelteKit (adapter-static), Playwright, Tailwind 4,
   Paraglide.
-- NIEMALS Relay-, Signaling-, WebSocket- oder TURN-Abhängigkeiten einführen.
-  Einziger Transport: `@le-space/libp2p-webrtc-qr`.
+- **Relay-optional by construction.** Der Knoten muss ohne Relay vollständig
+  funktionsfähig bleiben — das ist die Zusage, nicht bloß eine Voreinstellung.
+  Konkret und prüfbar: Die Checkbox ist standardmäßig **aus**, ein Start ohne
+  sie macht **keinen einzigen ausgehenden Netzwerkaufruf**, und kein Relay wird
+  ohne ausdrückliche Wahl kontaktiert. Wer die App im Studio benutzt, hinterlässt
+  nirgends Metadaten.
+  Ein zugeschalteter Relay dient der Verbindungsvermittlung; die Daten laufen
+  danach direkt zwischen den Geräten. Wo Daten gepinnt werden sollen, kommt nur
+  `orbitdb-relay` in Frage — `uc-go-peer` speichert nichts.
+  Voreingestellter Transport bleibt `@le-space/libp2p-webrtc-qr`.
   Zwei begründete Ausnahmen, beide in `docs/LIMITS.md` belegt: **gossipsub** als
   libp2p-Service (OrbitDB repliziert nicht ohne pubsub; läuft ausschließlich
   innerhalb der direkten WebRTC-Verbindung) und **STUN** zur ICE-Kandidaten-
