@@ -39,6 +39,24 @@ verbinden. Der Remote-Pfad (Copy & Paste über Messenger) schlägt dort fehl;
 der Studio-Pfad (QR, gleiches Netz) ist davon nicht betroffen. Der
 Verbindungs-Assistent muss diesen Fall ehrlich benennen statt endlos zu drehen.
 
+**Ein Relay, wenn jemand danach fragt.** Genau der oben beschriebene Fall —
+symmetrisches NAT auf beiden Seiten, Remote-Pfad über Messenger — ist der
+Grund, aus dem der Knoten seit `feat/relay-optional-transports` einen Relay
+_kann_. Er benutzt keinen: `circuitRelayTransport` und `webSockets` sind
+Fähigkeit, nicht Verwendung. Ohne `relayOptIn` gibt es keine Bootstrap-Liste,
+kein angekündigtes `/p2p-circuit` und ein `denyDialMultiaddr`, das jede
+Adresse ablehnt, die keine QR-Sitzung ist — prüfbar in
+`src/lib/p2p/libp2p-config.spec.js`, wo die Relay-Adresse absichtlich
+übergeben und trotzdem nicht gewählt wird.
+
+Was ein zugeschalteter Relay kostet, gehört hierher und nicht in die
+Bedienoberfläche: Der Relay sieht, dass zwei Peers zueinander wollen, und
+er sieht ihre IP-Adressen. Die Nutzdaten laufen danach direkt zwischen den
+Geräten, aber die Verbindungs-Metadaten liegen bei ihm. Deshalb ist die Wahl
+ausdrücklich und nicht voreingestellt, und deshalb werden eingebackene
+Adressen vor einer Verzeichnisabfrage geprüft: Wer die App im Studio benutzt,
+soll nicht einmal ein Verzeichnis kontaktieren.
+
 ### 1.3 Privacy: OrbitDB repliziert ganze Datenbanken — und kennt keine Leserechte
 
 Zwei getrennte Punkte, die oft vermischt werden:
