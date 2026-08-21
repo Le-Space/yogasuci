@@ -232,8 +232,7 @@ async function onboard(page) {
 	await page.goto('/studio/');
 
 	await expect(page.getByTestId('onboarding')).toBeVisible(READY);
-	await page.getByTestId('onboarding-user-id').fill('alice@example.com');
-	await page.getByTestId('onboarding-display-name').fill('Alice');
+	await page.getByTestId('onboarding-user-id').fill('Alice');
 	await page.getByTestId('onboarding-submit').click();
 
 	await expect(page.getByTestId('studio-ready')).toBeVisible(READY);

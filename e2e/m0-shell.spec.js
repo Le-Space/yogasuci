@@ -64,11 +64,12 @@ test.describe('app shell', () => {
 		await expect(alice.getByTestId('onboarding-create-warning')).toBeVisible({ timeout: 90_000 });
 		await expect(alice.getByTestId('recover-identity')).toBeVisible();
 
-		// The other half of the same hazard, and the one nobody could guess from the
-		// screen: the first field becomes the WebAuthn handle, so two people picking
-		// the same name on one front-desk device means the second replaces the
-		// first. The hint carries that — tied to the input rather than floating near
-		// it, because a warning a screen reader never reaches is not a warning.
+		// The name field used to carry a second hazard: it became the WebAuthn
+		// handle, so two people picking the same name on one front-desk device meant
+		// the second replaced the first. The handle is random now, and the hint says
+		// the opposite — that the name is only a label and may be shared. Either
+		// way it has to reach a screen reader, so it stays tied to the input rather
+		// than floating near it.
 		const hint = alice.getByTestId('onboarding-user-id-hint');
 
 		await expect(hint).toBeVisible();
