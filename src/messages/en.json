@@ -188,7 +188,7 @@
 	"occupancy_unknown": "Occupancy unknown",
 	"onboarding_busy": "Setting up the device …",
 	"onboarding_create": "Create passkey",
-	"onboarding_create_warning": "Creates a new passkey. If this device already had one — after cleared storage, or in a different browser — use the button below instead. Otherwise this counts as a new device, and whatever sits under the old passkey is out of reach.",
+	"onboarding_create_warning": "Creates a new passkey. If this device already had one — after cleared storage, or in a different browser — use the button below instead. Otherwise the studio sees a new device and has to approve it again. Whatever sits under the old passkey stays there, and “Switch account” at the foot of the page leads back to it.",
 	"onboarding_intro": "No account, no password. This device creates a key that never leaves it — that is what your studio and your passes recognise you by.",
 	"onboarding_recover": "Continue with the existing passkey",
 	"onboarding_title": "Set up this device",

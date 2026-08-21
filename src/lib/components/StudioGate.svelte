@@ -111,8 +111,14 @@
 					new device, and one whose storage was cleared — a new browser, a
 					wiped profile, a passkey synced from elsewhere. In the second, the
 					top button is the wrong one, and pressing it does not fail: it makes
-					a *second* passkey and therefore a second DID, under which the
-					studio does not know this device and its old passes are unreachable.
+					a *second* passkey and therefore a second account, which the studio
+					does not know and has to approve again.
+
+					Not a dead end any more, and the warning had to stop saying it was:
+					accounts are separated per DID rather than overwriting one another
+					(#82), so what sits under the first passkey stays there and "switch
+					account" in the footer leads back to it. What is still worth warning
+					about is the re-approval, not a loss.
 
 					A browser will not tell us which situation this is — it never reveals
 					whether a passkey exists without a gesture, on purpose. So the choice

@@ -188,7 +188,7 @@
 	"occupancy_unknown": "Belegung unbekannt",
 	"onboarding_busy": "Gerät wird eingerichtet …",
 	"onboarding_create": "Passkey anlegen",
-	"onboarding_create_warning": "Legt einen neuen Passkey an. Hattet ihr auf diesem Gerät schon einen — nach geleertem Speicher oder in einem anderen Browser —, nehmt den Knopf darunter. Sonst gilt dieses Gerät als ein neues, und was unter dem alten Passkey liegt, ist nicht mehr erreichbar.",
+	"onboarding_create_warning": "Legt einen neuen Passkey an. Hattet ihr auf diesem Gerät schon einen — nach geleertem Speicher oder in einem anderen Browser —, nehmt den Knopf darunter. Sonst sieht das Studio ein neues Gerät und muss es neu freigeben. Was unter dem alten Passkey liegt, bleibt dort und ist über „Konto wechseln“ am Seitenende wieder erreichbar.",
 	"onboarding_intro": "Kein Konto, kein Passwort. Dieses Gerät legt einen Schlüssel an, der es nie verlässt — daran erkennen dich dein Studio und deine Karten wieder.",
 	"onboarding_recover": "Mit vorhandenem Passkey fortfahren",
 	"onboarding_title": "Gerät einrichten",
