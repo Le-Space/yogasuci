@@ -4,11 +4,17 @@
 
 Peer-to-peer class booking for yoga studios with more than one location. The
 programme, the passes and the check-in run directly between devices — **no
-server, no relay, no account**.
+server, no account, and no relay unless somebody switches one on**.
 
 Two devices find each other because a person carries a signed code between them:
 scanned as a QR code at the front desk, pasted, or sent through a messenger.
 After that they replicate directly over WebRTC.
+
+A relay exists for the case a carried code cannot bridge — two devices on
+different mobile networks, where neither can reach the other. It is off by
+default, it is never contacted unless it is switched on, and switching it on
+introduces the two devices to each other: the passes and the check-ins still go
+directly between them, not through it.
 
 > **Status:** M1–M5 are implemented — registry, programme editor, bookings, cash
 > sales, check-in with the courier roundtrip, fork alarm, export and recovery,
@@ -81,7 +87,9 @@ REMOTE_SCENARIO=1 npx playwright test --project=remote
 Two devices in two separate browsers, each reached over a websocket rather than
 launched, connected only by a pasted code — and no `?ice=host`, so ICE runs for
 real. It is the only test that touches the claim the whole app rests on: two
-devices find each other directly, with no server and no relay in between.
+devices find each other directly, with no server and no relay in between. That
+is the path the app has to be able to take with nothing switched on, which is
+what "relay-optional by construction" means and what this proves.
 
 The project does not exist unless `REMOTE_SCENARIO` is set, so it never joins
 the gate and competes with it for machines. Point `REMOTE_WS_ENDPOINT` (and
@@ -99,7 +107,7 @@ independently arrive at the same answer without talking to each other.
 **The student is the sync courier.** Their device carries their own ledger from
 location to location. Because check-in pulls the latest heads _before_ redeeming,
 location B sees location A's redemption as soon as the same person turns up —
-structurally, with no relay involved.
+a property of how the ledger is read, not of anything sitting in the middle.
 
 **The studio keeps the books.** A ticket ledger is created under a shared studio
 access controller, so its address follows from the student's DID and the owner's
