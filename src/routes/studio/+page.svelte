@@ -95,7 +95,7 @@
 		}
 	});
 
-	/** @param {{ did: string, label: string, publicKey?: string }} device */
+	/** @param {{ did: string, label: string, publicKey?: string, encryptionKey?: string }} device */
 	async function approve(device) {
 		const draft = drafts[device.did];
 
@@ -106,6 +106,10 @@
 				locationId: draft.locationId,
 				// Without it the ledger cannot verify anything this device signs.
 				publicKey: device.publicKey ?? '',
+				// And without this, nobody can wrap a database key for it (#95). It
+				// comes from the device's own introduction, not from here — a key
+				// invented by the approver would open nothing.
+				encryptionKey: device.encryptionKey ?? '',
 				// Falls back to what the device reported about itself, trimmed.
 				label: draft.label || device.label || device.did.slice(-8)
 			});
@@ -286,6 +290,7 @@
 				class="mt-4 grid max-w-lg gap-3 border-b border-border pb-4"
 				data-testid="pending-device"
 				data-device-did={device.did}
+				data-can-receive-keys={Boolean(device.encryptionKey)}
 				onsubmit={(event) => {
 					event.preventDefault();
 					approve(device);
@@ -351,11 +356,19 @@
 
 		<ul class="mt-3 grid gap-2" data-testid="device-list">
 			{#each $devicesStore as device (device._id)}
+				<!--
+					`data-can-receive-keys` says whether a database key can be wrapped for
+					this device (#95) — that is, whether its published encryption key
+					survived the introduction and the approval. The key itself stays out
+					of the DOM: what anybody needs to know here is that it arrived, not
+					what it is.
+				-->
 				<li
 					class="flex items-baseline gap-3 border-b border-border pb-2"
 					data-testid="device-item"
 					data-device-did={device.deviceDid}
 					data-revoked={Boolean(device.revokedAt)}
+					data-can-receive-keys={Boolean(device.encryptionKey)}
 				>
 					<span class="flex-1">
 						{device.label}
