@@ -9,6 +9,8 @@
 
 import { get, writable } from 'svelte/store';
 
+import { ownDeviceKeys } from './device-keys.js';
+
 import { openDocuments, readAll } from './open.js';
 import { setLedgerWriteAccess } from './studio-acl.js';
 import { nodeStatusStore, orbitdbStore, ownDidStore } from '../p2p/node.js';
@@ -109,6 +111,16 @@ async function registerOwnerDevice() {
 		locationId: '',
 		label: 'owner',
 		publicKey: orbitdb?.identity?.publicKey ?? '',
+		encryptionKey:
+			(
+				await ownDeviceKeys().catch((error) => {
+					// Said out loud rather than swallowed: without this key nobody can wrap
+					// a database key for this device, and a silent empty string is how that
+					// goes unnoticed until somebody cannot read their own bookings.
+					console.warn('No encryption key for this device (registry entry):', error);
+					return null;
+				})
+			)?.publicKey ?? '',
 		grantedAt: new Date().toISOString(),
 		revokedAt: null
 	});
@@ -164,8 +176,17 @@ export async function deactivateLocation(locationId) {
  * @param {string} device.label
  * @param {string} [device.publicKey] the OrbitDB signing key, needed to verify
  *   this device's ledger events — the DID alone cannot do it
+ * @param {string} [device.encryptionKey] the public half of this device's ECDH
+ *   pair, so a database key can be wrapped for it (#95)
  */
-export async function registerDevice({ deviceDid, role, locationId, label, publicKey = '' }) {
+export async function registerDevice({
+	deviceDid,
+	role,
+	locationId,
+	label,
+	publicKey = '',
+	encryptionKey = ''
+}) {
 	const db = requireDb();
 
 	// The grants come first. If the registry entry landed and an ACL write
@@ -183,6 +204,12 @@ export async function registerDevice({ deviceDid, role, locationId, label, publi
 		locationId,
 		label,
 		publicKey,
+		// The half somebody else needs to wrap a database key for this device. A
+		// passkey cannot receive one — it signs and nothing else — so this is a
+		// second key pair the device makes for itself (#95). Empty for a device
+		// registered before this existed, which is why every reader has to treat an
+		// absent key as "cannot be written to yet" rather than as an error.
+		encryptionKey,
 		grantedAt: new Date().toISOString(),
 		revokedAt: null
 	});

@@ -68,6 +68,12 @@ test.describe('device onboarding', () => {
 		await expect(registered).toBeVisible();
 		await expect(registered).toHaveAttribute('data-revoked', 'false');
 
+		// And it carries the key a database key can be wrapped for later (#95).
+		// Worth asserting rather than assuming: the introduction protocol rebuilds
+		// the message field by field, so a field nobody named there is dropped on
+		// the wire in silence — which is what this one did until it was added.
+		await expect(registered).toHaveAttribute('data-can-receive-keys', 'true');
+
 		// --- After approval: Carol can actually write ------------------------
 		// The approval reaches Carol by replication, so her editor appears
 		// without a reload.

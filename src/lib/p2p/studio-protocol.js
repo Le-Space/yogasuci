@@ -90,7 +90,7 @@ export async function stopServingStudio(libp2p) {
  * against, so a lie would simply produce events nobody can verify.
  *
  * @param {any} libp2p
- * @param {(hello: { peerId: string, did: string, label: string, publicKey: string, bookingsAddress: string | null }) => void} onHello
+ * @param {(hello: { peerId: string, did: string, label: string, publicKey: string, encryptionKey: string, bookingsAddress: string | null }) => void} onHello
  */
 export async function listenForDevices(libp2p, onHello) {
 	await libp2p.handle(
@@ -108,6 +108,11 @@ export async function listenForDevices(libp2p, onHello) {
 					// signing key from OrbitDB's keystore, and only the latter can
 					// verify a ledger event's signature.
 					publicKey: typeof hello.publicKey === 'string' ? hello.publicKey : '',
+					// A second key, and a different job: this one receives rather than
+					// verifies. A passkey cannot be encrypted to, so a device makes an
+					// ECDH pair of its own and publishes the public half, which is what
+					// lets a studio wrap a database key for it later (#95).
+					encryptionKey: typeof hello.encryptionKey === 'string' ? hello.encryptionKey : '',
 					// No ledger address: a ticket ledger belongs to the studio, and its
 					// address is derived from this DID rather than taken on trust
 					// (src/lib/db/studio-acl.js). Accepting one here would let whoever
@@ -129,7 +134,7 @@ export async function listenForDevices(libp2p, onHello) {
  *
  * @param {any} libp2p
  * @param {string | any} peerId
- * @param {{ did: string, label: string, publicKey?: string, bookingsAddress?: string | null }} self
+ * @param {{ did: string, label: string, publicKey?: string, encryptionKey?: string, bookingsAddress?: string | null }} self
  */
 export async function introduceSelf(libp2p, peerId, self) {
 	const peer = typeof peerId === 'string' ? peerIdFromString(peerId) : peerId;

@@ -21,6 +21,7 @@ import { openStudentTickets } from './tickets.js';
 import { openProgram, programDbStore } from './program.js';
 import { rememberAddress } from './open.js';
 import { rememberStudio } from './studios.js';
+import { ownDeviceKeys } from './device-keys.js';
 import { openJoinedStudios } from './open-studios.js';
 
 /**
@@ -30,12 +31,12 @@ import { openJoinedStudios } from './open-studios.js';
  * not belong in the registry until the owner has acted on one. Keyed by DID so
  * a device reconnecting does not queue up twice.
  *
- * @type {import('svelte/store').Writable<Map<string, { peerId: string, did: string, label: string, seenAt: string }>>}
+ * @type {import('svelte/store').Writable<Map<string, { peerId: string, did: string, label: string, publicKey?: string, encryptionKey?: string, bookingsAddress?: string | null, seenAt: string }>>}
  */
 export const pendingDevicesStore = writable(new Map());
 
 /**
- * @param {{ peerId: string, did: string, label: string, publicKey?: string, bookingsAddress?: string | null }} hello
+ * @param {{ peerId: string, did: string, label: string, publicKey?: string, encryptionKey?: string, bookingsAddress?: string | null }} hello
  */
 export function rememberPendingDevice(hello) {
 	note({
@@ -176,6 +177,18 @@ export async function introduceToPeer(peerId) {
 		did: ownDid,
 		label: navigator.userAgent.slice(0, 80),
 		publicKey: get(orbitdbStore)?.identity?.publicKey ?? '',
+		// So a studio can wrap this device's ledger key for it later, without the
+		// device having to be present when that happens (#95).
+		encryptionKey:
+			(
+				await ownDeviceKeys().catch((error) => {
+					// Said out loud rather than swallowed: without this key nobody can wrap
+					// a database key for this device, and a silent empty string is how that
+					// goes unnoticed until somebody cannot read their own bookings.
+					console.warn('No encryption key for this device (introduction):', error);
+					return null;
+				})
+			)?.publicKey ?? '',
 		bookingsAddress: get(bookingsDbStore)?.address?.toString() ?? null
 	};
 
@@ -205,20 +218,13 @@ export async function joinStudioFromPeer(peerId) {
 		// Say who we are before asking anything. The studio cannot register a
 		// device whose DID it never learned, and the introduction has to happen
 		// while the connection is up.
-		const ownDid = get(ownDidStore);
-		if (ownDid) {
-			await introduceSelf(libp2p, peerId, {
-				did: ownDid,
-				label: navigator.userAgent.slice(0, 80),
-				// So the studio can see this device's requests. Handing over the
-				// address is what "pairing" amounts to here — it grants nothing by
-				// itself, the write access was granted from the registry.
-				publicKey: get(orbitdbStore)?.identity?.publicKey ?? '',
-				bookingsAddress: get(bookingsDbStore)?.address?.toString() ?? null
-			}).catch(() => {
-				// A studio that does not speak this protocol is still worth joining.
-			});
-		}
+		// Through `introduceToPeer` rather than assembled again here. It used to be
+		// built twice, and the copies drifted the moment one of them gained a field:
+		// this one ran second, so a studio received the full introduction and then
+		// immediately overwrote it with one that was missing the device's encryption
+		// key — the pending entry is keyed by DID, so the last message wins. Nothing
+		// reported it, because both messages were perfectly well formed.
+		await introduceToPeer(peerId);
 
 		const announcement = await requestStudio(libp2p, peerId);
 		if (!announcement) {
