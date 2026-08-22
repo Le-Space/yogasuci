@@ -270,6 +270,8 @@
 	"report_sales": "Sales",
 	"report_title": "Reconciliation & till",
 	"report_total": "Total",
+	"saved": "Saved",
+	"saving": "Saving …",
 	"second_device_action": "Connect a second device",
 	"second_device_body": "This studio hangs on a single device. Lose it and the registry is gone, and nobody can approve or revoke anything again. A second owner device is not a convenience, it is the backup.",
 	"second_device_title": "No second device",
