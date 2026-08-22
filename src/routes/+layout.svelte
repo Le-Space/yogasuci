@@ -7,9 +7,8 @@
 	import SyncStatus from '$lib/components/SyncStatus.svelte';
 	import { buildStamp } from '$lib/build-info.js';
 	import { getLocale } from '$lib/paraglide/runtime.js';
-	import { canEditProgram } from '$lib/db/join.js';
+	import { canEditStore } from '$lib/db/join.js';
 	import { studioReady, switchAccount } from '$lib/identity/onboarding.js';
-	import { devicesStore, studioStore } from '$lib/db/registry.js';
 	import { onMount } from 'svelte';
 	import * as m from '$lib/paraglide/messages.js';
 
@@ -80,11 +79,7 @@
 		{ path: '/connect', testid: 'nav-connect', label: () => m.nav_connect() }
 	]);
 
-	// Reading both stores is what makes this re-run: `canEditProgram()` reaches into
-	// them without subscribing, so on its own it would answer once and never again —
-	// and a device approved a minute ago would keep the student's navigation until
-	// the next reload.
-	let isCounter = $derived(Boolean($studioStore) && Boolean($devicesStore) && canEditProgram());
+	let isCounter = $derived($canEditStore);
 
 	let visible = $derived(NAV.filter((item) => !('counter' in item) || isCounter));
 </script>

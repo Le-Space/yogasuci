@@ -15,14 +15,14 @@
 		decideBooking,
 		studentBookingsStore
 	} from '$lib/db/bookings.js';
-	import { canEditProgram } from '$lib/db/join.js';
+	import { canEditStore } from '$lib/db/join.js';
 	import { findConflicts } from '$lib/db/conflicts.js';
 	import { foldLedger } from '$lib/db/ledger-view.js';
 	import { ticketEventsStore } from '$lib/db/tickets.js';
 	import { coursesStore, localized } from '$lib/db/program.js';
 	import { hasFreePlace, syncOccupancy } from '$lib/db/occupancy.js';
 	import { studentBookingsStore as allStudentBookings } from '$lib/db/bookings.js';
-	import { devicesStore, studioStore } from '$lib/db/registry.js';
+	import { devicesStore } from '$lib/db/registry.js';
 	import { ownDidStore } from '$lib/p2p/node.js';
 	import { getLocale } from '$lib/paraglide/runtime.js';
 	import * as m from '$lib/paraglide/messages.js';
@@ -56,9 +56,7 @@
 		};
 	});
 
-	let isStudioDevice = $derived(
-		Boolean($studioStore) && Boolean($devicesStore) && canEditProgram()
-	);
+	let isStudioDevice = $derived($canEditStore);
 
 	/** @type {Record<string, () => string>} */
 	const STATUS_LABEL = {

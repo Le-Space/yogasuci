@@ -12,17 +12,16 @@
 	 * merely waiting for the registry needs to do nothing but wait.
 	 */
 	import { resolve } from '$app/paths';
-	import { canEditProgram } from '$lib/db/join.js';
-	import { devicesStore, studioStore } from '$lib/db/registry.js';
+	import { canEditStore, joinedStudioStore } from '$lib/db/join.js';
 	import * as m from '$lib/paraglide/messages.js';
 
 	let { children } = $props();
 
-	let isCounter = $derived(Boolean($studioStore) && Boolean($devicesStore) && canEditProgram());
+	let isCounter = $derived($canEditStore);
 
 	// "Knows a studio but is not part of it" is the ordinary student case; knowing
 	// no studio at all means this device has never paired with anything.
-	let joined = $derived(Boolean($studioStore));
+	let joined = $derived($joinedStudioStore);
 </script>
 
 {#if isCounter}

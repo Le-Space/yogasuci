@@ -5,7 +5,13 @@
 // one date struck) and five packages; bilingual; and all of it survives a
 // reload.
 
-import { expect, openCourseForm, openPackageForm, test } from './fixtures.js';
+import {
+	expect,
+	onboard as onboardVia,
+	openCourseForm,
+	openPackageForm,
+	test
+} from './fixtures.js';
 
 const READY = { timeout: 90_000 };
 
@@ -384,5 +390,22 @@ test.describe('taking a programme over from a pasted document', () => {
 		await expect(wrong).toHaveAttribute('data-active', 'false');
 		await expect(alice.getByTestId('package-item')).toHaveCount(1);
 		await expect(wrong.getByTestId('package-deactivate')).toHaveCount(0);
+	});
+});
+
+test.describe('a device that belongs to no studio', () => {
+	test('is told to pair, not that it is a guest somewhere', async ({ alice }) => {
+		// The guest sentence names a studio — "you are viewing this studio as a
+		// guest" — and a device that has just been set up is not viewing one. It
+		// was shown anyway, because the test behind it was `!canEdit` and an
+		// absent studio makes that false just as a stranger's studio does. First
+		// thing the screen said to a new device (#84).
+		test.setTimeout(240_000);
+
+		await alice.goto('/program/?ice=host');
+		await onboardVia(alice, 'newcomer');
+
+		await expect(alice.getByTestId('unpaired-notice')).toBeVisible(READY);
+		await expect(alice.getByTestId('guest-notice')).toHaveCount(0);
 	});
 });

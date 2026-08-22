@@ -10,7 +10,7 @@
 // the ACL, not merely hidden by the UI. Gaining write access is a registry
 // entry plus a grant (T2.3, T3.1).
 
-import { get, writable } from 'svelte/store';
+import { derived, get, writable } from 'svelte/store';
 
 import { libp2pStore, orbitdbStore, ownDidStore } from '../p2p/node.js';
 import { introduceSelf, requestStudio } from '../p2p/studio-protocol.js';
@@ -266,3 +266,32 @@ export async function joinStudioFromPeer(peerId) {
 		throw error;
 	}
 }
+
+/**
+ * Whether this device belongs to any studio at all.
+ *
+ * Kept apart from `canEditStore` because the two failures need opposite answers
+ * and were being given the same one: a device with no studio was told "you are
+ * viewing this studio as a guest", which describes a situation it is not in and
+ * names a studio that does not exist (#84). Not knowing a studio calls for
+ * pairing; knowing somebody else's calls for nothing at all.
+ */
+export const joinedStudioStore = derived(studioStore, (studio) => Boolean(studio));
+
+/**
+ * Whether this device may write to the studio it currently has open.
+ *
+ * The one definition of a test that had been copied into four components as
+ * `Boolean($studioStore) && Boolean($devicesStore) && canEditProgram()`. Only
+ * the last term carries meaning; the two `Boolean(...)` are there so the
+ * expression re-runs, because `canEditProgram()` reaches into both stores with
+ * `get` and would otherwise answer once and never again — a device approved a
+ * minute ago would keep a student's screen until the next reload.
+ *
+ * Expressed as a derived store, that subscription is the store's job rather than
+ * something each caller has to remember and none of them could get wrong twice.
+ */
+export const canEditStore = derived(
+	[studioStore, devicesStore],
+	([studio, devices]) => Boolean(studio) && Boolean(devices) && canEditProgram()
+);
