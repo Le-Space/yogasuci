@@ -5,7 +5,14 @@
 // the revocation. Checking only that the registry shows the right entries would
 // pass just as happily with the ACL never touched.
 
-import { connectViaPaste, expect, onboard, openCourseForm, test } from './fixtures.js';
+import {
+	connectViaPaste,
+	expect,
+	onboard,
+	openCourseForm,
+	openProgramme,
+	test
+} from './fixtures.js';
 
 const READY = { timeout: 90_000 };
 const REPLICATED = { timeout: 90_000 };
@@ -37,7 +44,7 @@ test.describe('device onboarding', () => {
 		const carolDid = await carol.evaluate(() => window.__yoga.identity());
 
 		// --- Before approval: no write access ------------------------------
-		await carol.getByTestId('nav-program').click();
+		await openProgramme(carol);
 		await expect(carol.getByTestId('studio-ready')).toBeVisible(READY);
 		// The guest view offers no editor at all — the honest reflection of an
 		// ACL that would refuse the write anyway.
@@ -64,7 +71,7 @@ test.describe('device onboarding', () => {
 		// --- After approval: Carol can actually write ------------------------
 		// The approval reaches Carol by replication, so her editor appears
 		// without a reload.
-		await carol.getByTestId('nav-program').click();
+		await openProgramme(carol);
 		// The *opening* button, not the save button: the form lives in a dialog now,
 		// so `course-add` is in the document but not visible until it opens. What
 		// this line is about is the permission, and `course-new` is what carries it.
@@ -83,7 +90,7 @@ test.describe('device onboarding', () => {
 		// The write is only proven once it survives *Alice's* access controller —
 		// her copy is where a grant that did not exist would refuse it.
 		await expect(carol.getByTestId('program-error')).toHaveCount(0);
-		await alice.getByTestId('nav-program').click();
+		await openProgramme(alice);
 		await expect(alice.locator('[data-course-id="course:vinyasa-mi-18"]')).toBeVisible(REPLICATED);
 
 		// --- Revocation -------------------------------------------------------
@@ -101,7 +108,7 @@ test.describe('device onboarding', () => {
 		// the course Carol wrote while approved is still there.
 		await expect(registered).toBeVisible();
 
-		await alice.getByTestId('nav-program').click();
+		await openProgramme(alice);
 		await expect(alice.locator('[data-course-id="course:vinyasa-mi-18"]')).toHaveCount(1);
 	});
 

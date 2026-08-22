@@ -10,6 +10,7 @@ import {
 	expect,
 	onboard as onboardVia,
 	openCourseForm,
+	openProgramme,
 	test
 } from './fixtures.js';
 
@@ -42,7 +43,7 @@ test.describe('joining a studio', () => {
 		await addLocation(alice, 'altstadt', 'Studio Altstadt');
 
 		// One course, so there is something on the programme carrying that location.
-		await alice.getByTestId('nav-program').click();
+		await openProgramme(alice);
 		await expect(alice.getByTestId('studio-ready')).toBeVisible(READY);
 		await addCourse(alice, 'vinyasa-mi-18', 'Vinyasa Flow');
 
@@ -65,7 +66,7 @@ test.describe('joining a studio', () => {
 		// location lives in the registry while the course carries only its id, so a
 		// course row showing "Studio Altstadt" is proof the registry arrived — on a
 		// screen a student actually has.
-		await bob.getByTestId('nav-program').click();
+		await openProgramme(bob);
 		await expect(bob.getByTestId('studio-ready')).toBeVisible(READY);
 
 		// One row, two databases. The course comes from the programme; the words
@@ -103,11 +104,11 @@ test.describe('joining a studio', () => {
 		await connectViaPaste(alice, bob);
 		await expect(bob.getByTestId('join-status')).toHaveAttribute('data-state', 'joined', READY);
 
-		await alice.getByTestId('nav-program').click();
+		await openProgramme(alice);
 		await expect(alice.getByTestId('studio-ready')).toBeVisible(READY);
 		await addCourse(alice, 'yin-fr-19', 'Yin Yoga');
 
-		await bob.getByTestId('nav-program').click();
+		await openProgramme(bob);
 		await expect(bob.locator('[data-course-id="course:yin-fr-19"]')).toBeVisible(REPLICATED);
 	});
 
@@ -212,7 +213,7 @@ test.describe('joining a studio', () => {
 		// And both are on the programme, one under the other. The studio just
 		// joined is the one this device works in, so it renders through the
 		// ordinary path; the earlier one appears underneath with its name over it.
-		await bob.getByTestId('nav-program').click();
+		await openProgramme(bob);
 		await expect(bob.getByTestId('other-studio')).toHaveCount(1, REPLICATED);
 		await expect(bob.getByTestId('other-studio')).toContainText('Yoga Eggenfelden');
 

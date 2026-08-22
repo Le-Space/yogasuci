@@ -12,6 +12,7 @@ import {
 	openConnect,
 	openCourseForm,
 	openPackageForm,
+	openProgramme,
 	test
 } from './fixtures.js';
 
@@ -105,7 +106,7 @@ test.describe('conflicts', () => {
 		const bobDid = await bob.evaluate(() => window.__yoga.identity());
 
 		// Bob books the class and buys a pass for it.
-		await bob.getByTestId('nav-program').click();
+		await openProgramme(bob);
 		await expect(bob.locator('[data-course-id="course:vinyasa-mi-18"]')).toBeVisible(REPLICATED);
 		await bob.locator('[data-course-id="course:vinyasa-mi-18"]').getByTestId('course-book').click();
 
@@ -198,7 +199,7 @@ async function setUpStudio(page) {
 	await page.getByTestId('location-add').click();
 	await expect(page.locator('[data-location-id="location:altstadt"]')).toBeVisible();
 
-	await page.getByTestId('nav-program').click();
+	await openProgramme(page);
 	await expect(page.getByTestId('studio-ready')).toBeVisible(READY);
 
 	await openPackageForm(page);

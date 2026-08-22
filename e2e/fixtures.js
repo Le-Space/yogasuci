@@ -426,6 +426,26 @@ export async function openTab(page, name) {
 }
 
 /**
+ * Go to the programme and put the course list in front of the caller.
+ *
+ * The screen opens on Today now, so the courses are in a panel that is present
+ * but hidden (#76). A test that navigates and then reads a course row is not
+ * looking at a missing element — it is looking at an *invisible* one, which
+ * auto-waiting turns into a full timeout rather than a failure. Twelve tests
+ * did exactly that, and on a two-core runner the wasted waits took the job past
+ * its thirty-minute limit.
+ *
+ * So navigation and "show me the courses" are one step. Anything that genuinely
+ * wants the day view asks for it by name instead.
+ *
+ * @param {Page} page
+ */
+export async function openProgramme(page) {
+	await page.getByTestId('nav-program').click();
+	await openTab(page, 'courses');
+}
+
+/**
  * Bring the passes into view.
  *
  * The programme is two tabs now, courses first, so anything about passes has to
