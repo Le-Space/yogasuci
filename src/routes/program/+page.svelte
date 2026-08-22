@@ -10,6 +10,7 @@
 	import Modal from '$lib/components/Modal.svelte';
 	import SetupImport from '$lib/components/SetupImport.svelte';
 	import StudioGate from '$lib/components/StudioGate.svelte';
+	import { createWrites } from '$lib/ui/writes.svelte.js';
 	import { locationsStore } from '$lib/db/registry.js';
 	import {
 		coursesStore,
@@ -51,7 +52,7 @@
 		{ value: 'year', label: () => m.package_kind_year() }
 	];
 
-	let error = $state('');
+	const writes = createWrites();
 	let courseFormOpen = $state(false);
 	let packageFormOpen = $state(false);
 
@@ -109,16 +110,6 @@
 		validityDays: 180,
 		validityStart: 'issue'
 	});
-
-	/** @param {() => Promise<void>} action */
-	async function run(action) {
-		error = '';
-		try {
-			await action();
-		} catch (/** @type {any} */ cause) {
-			error = cause?.message ?? String(cause);
-		}
-	}
 
 	function toggleWeekday(/** @type {number} */ value) {
 		series.weekdays = series.weekdays.includes(value)
@@ -213,7 +204,7 @@
 	}
 
 	async function book(/** @type {any} */ course) {
-		await run(async () => {
+		await writes.run(async () => {
 			const date =
 				course.mode === 'series'
 					? null
@@ -230,7 +221,7 @@
 	async function submitCourse(/** @type {SubmitEvent} */ event) {
 		event.preventDefault();
 
-		await run(async () => {
+		await writes.run(async () => {
 			const title = { de: course.titleDe, en: course.titleEn || course.titleDe };
 
 			if (course.mode === 'series') {
@@ -264,13 +255,13 @@
 			course = { ...course, id: '', titleDe: '', titleEn: '' };
 			courseFormOpen = false;
 			sessions = [];
-		});
+		}, 'course');
 	}
 
 	async function submitPackage(/** @type {SubmitEvent} */ event) {
 		event.preventDefault();
 
-		await run(async () => {
+		await writes.run(async () => {
 			await savePackage({
 				id: pkg.id,
 				name: { de: pkg.nameDe, en: pkg.nameEn || pkg.nameDe },
@@ -285,7 +276,7 @@
 
 			pkg = { ...pkg, id: '', nameDe: '', nameEn: '' };
 			packageFormOpen = false;
-		});
+		}, 'package');
 	}
 
 	/**
@@ -310,9 +301,9 @@
 <h1 class="text-3xl font-bold">{m.program_title()}</h1>
 
 <StudioGate>
-	{#if error}
+	{#if writes.error}
 		<p class="mt-4 text-danger" role="alert" data-testid="program-error">
-			{m.error_generic({ reason: error })}
+			{m.error_generic({ reason: writes.error })}
 		</p>
 	{/if}
 
@@ -464,7 +455,7 @@
 								<button
 									type="button"
 									data-testid="course-booking-withdraw"
-									onclick={() => run(() => cancelBooking(mine._id))}
+									onclick={() => writes.run(() => cancelBooking(mine._id))}
 									class="rounded-control border border-border px-2 py-1 text-sm"
 								>
 									{m.booking_withdraw()}
@@ -485,7 +476,7 @@
 						<button
 							type="button"
 							data-testid="course-deactivate"
-							onclick={() => run(() => deactivateCourse(entry._id))}
+							onclick={() => writes.run(() => deactivateCourse(entry._id))}
 							class="rounded-control border border-border px-2 py-1 text-sm"
 						>
 							{m.course_deactivate()}
@@ -725,9 +716,10 @@
 					<button
 						type="submit"
 						data-testid="course-add"
-						class="justify-self-start rounded-control bg-accent px-4 py-2 font-medium text-accent-contrast"
+						disabled={writes.stateOf('course') === 'saving'}
+						class="justify-self-start rounded-control bg-accent px-4 py-2 font-medium text-accent-contrast disabled:opacity-50"
 					>
-						{m.course_add()}
+						{writes.stateOf('course') === 'saving' ? m.saving() : m.course_add()}
 					</button>
 				</form>
 			</Modal>
@@ -763,7 +755,7 @@
 						<button
 							type="button"
 							data-testid="package-deactivate"
-							onclick={() => run(() => deactivatePackage(entry._id))}
+							onclick={() => writes.run(() => deactivatePackage(entry._id))}
 							class="rounded-control border border-border px-2 py-1 text-sm"
 						>
 							{m.package_deactivate()}
@@ -875,9 +867,10 @@
 					<button
 						type="submit"
 						data-testid="package-add"
-						class="justify-self-start rounded-control border border-border px-4 py-2"
+						disabled={writes.stateOf('package') === 'saving'}
+						class="justify-self-start rounded-control border border-border px-4 py-2 disabled:opacity-50"
 					>
-						{m.package_add()}
+						{writes.stateOf('package') === 'saving' ? m.saving() : m.package_add()}
 					</button>
 				</form>
 			</Modal>

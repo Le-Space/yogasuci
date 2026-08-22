@@ -9,10 +9,36 @@
 	import { getLocale } from '$lib/paraglide/runtime.js';
 	import { canEditStore } from '$lib/db/join.js';
 	import { studioReady, switchAccount } from '$lib/identity/onboarding.js';
+	import { pendingWritesStore } from '$lib/ui/writes.svelte.js';
 	import { onMount } from 'svelte';
 	import * as m from '$lib/paraglide/messages.js';
 
 	let { children } = $props();
+
+	/**
+	 * Do not let a write be walked out on.
+	 *
+	 * Saving is a second or so of awaited signing, and somebody who presses save
+	 * and closes the tab loses it with nothing to show for it (#86). The screens
+	 * say when a write is running now, but a person reaching for the close button
+	 * is not reading them — so the browser asks instead.
+	 *
+	 * Registered only while something is actually in flight. A `beforeunload`
+	 * listener that is always attached costs every navigation its back/forward
+	 * cache entry, which is a real price paid for a case that is almost never
+	 * true. The wording is the browser's own: the string a page supplies has been
+	 * ignored for years, and writing one would be writing a sentence nobody sees.
+	 */
+	$effect(() => {
+		if ($pendingWritesStore < 1) return;
+
+		const warn = (/** @type {BeforeUnloadEvent} */ event) => {
+			event.preventDefault();
+		};
+
+		window.addEventListener('beforeunload', warn);
+		return () => window.removeEventListener('beforeunload', warn);
+	});
 
 	/**
 	 * Turn the service worker on.
