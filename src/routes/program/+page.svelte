@@ -24,13 +24,12 @@
 		saveSeriesCourse
 	} from '$lib/db/program.js';
 	import { generateSessions } from '$lib/program/sessions.js';
-	import { canEditProgram } from '$lib/db/join.js';
+	import { canEditStore, joinedStudioStore } from '$lib/db/join.js';
 	import { studiosStore } from '$lib/db/studios.js';
 	import { nextOccurrence } from '$lib/program/sessions.js';
 	import { bookingsStore, cancelBooking, requestBooking } from '$lib/db/bookings.js';
 	import { connectedPeersStore } from '$lib/p2p/node.js';
 	import { readOccupancy } from '$lib/db/occupancy.js';
-	import { devicesStore, studioStore } from '$lib/db/registry.js';
 	import { getLocale } from '$lib/paraglide/runtime.js';
 	import * as m from '$lib/paraglide/messages.js';
 
@@ -79,7 +78,7 @@
 	//
 	// Reads $devicesStore so an approval — or a revocation — arriving by
 	// replication changes what this device offers, without a reload.
-	let canEdit = $derived(Boolean($studioStore) && Boolean($devicesStore) && canEditProgram());
+	let canEdit = $derived($canEditStore);
 
 	let course = $state({
 		id: '',
@@ -317,7 +316,21 @@
 		</p>
 	{/if}
 
-	{#if !canEdit}
+	<!--
+		Two situations, and they used to share one sentence. A device with no studio
+		at all was told it was "viewing this studio as a guest" — describing a place
+		it is not in and naming a studio that does not exist, as the first thing this
+		screen said to a device somebody had just set up (#84).
+
+		So the unpaired case says what to do instead, in the words the counter
+		screens already use for it, and the guest sentence is kept for the case it
+		was written about: somebody else's studio, open and read-only.
+	-->
+	{#if !$joinedStudioStore}
+		<p class="mt-4 text-sm text-muted" data-testid="unpaired-notice">
+			{m.counter_only_unpaired()}
+		</p>
+	{:else if !canEdit}
 		<p class="mt-4 text-sm text-muted" data-testid="guest-notice">{m.guest_readonly()}</p>
 	{/if}
 
