@@ -75,9 +75,11 @@ export function forgetAddresses() {
  * @param {any} [options.accessController] use this access controller instead of
  *   the default one. Ticket ledgers pass the shared studio controller, which is
  *   what makes their address the same on every device (see ./studio-acl.js)
+ * @param {any} [options.encryption] the `encryption` option OrbitDB applies to
+ *   entry payloads. Nothing passes it yet — see the note at the call below
  * @returns {Promise<any>} the opened OrbitDB documents store
  */
-export async function openDocuments({ key, name, address, accessController }) {
+export async function openDocuments({ key, name, address, accessController, encryption }) {
 	const orbitdb = get(orbitdbStore);
 	if (!orbitdb) throw new Error('The node is not running yet.');
 
@@ -89,7 +91,14 @@ export async function openDocuments({ key, name, address, accessController }) {
 		sync: true,
 		// Only the creator may write at first. Everything else is a runtime
 		// grant, so the address stays stable as the studio grows.
-		AccessController: accessController ?? OrbitDBAccessController({ write: [orbitdb.identity.id] })
+		AccessController: accessController ?? OrbitDBAccessController({ write: [orbitdb.identity.id] }),
+		// Passed through, and nothing passes it yet. Encryption cannot be switched
+		// on one database at a time: both databases that need it have more than one
+		// reader by design — a student's bookings are written by the studio too, and
+		// the studio's ledger is read by the student — so it goes live together with
+		// key sharing (#95 phase 2). The seam is here so that step does not have to
+		// reopen this function.
+		...(encryption ? { encryption } : {})
 	});
 
 	rememberAddress(key, db.address.toString());
