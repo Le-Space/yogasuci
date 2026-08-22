@@ -8,6 +8,7 @@
 	 * ledger verifies old events against it and the cash report is grouped by it.
 	 */
 	import StudioGate from '$lib/components/StudioGate.svelte';
+	import { createWrites } from '$lib/ui/writes.svelte.js';
 	import {
 		deactivateLocation,
 		devicesStore,
@@ -30,7 +31,7 @@
 	import * as m from '$lib/paraglide/messages.js';
 
 	let studioName = $state('');
-	let error = $state('');
+	const writes = createWrites();
 	let exported = $state(/** @type {number | null} */ (null));
 
 	/**
@@ -98,7 +99,7 @@
 	async function approve(device) {
 		const draft = drafts[device.did];
 
-		await run(async () => {
+		await writes.run(async () => {
 			await registerDevice({
 				deviceDid: device.did,
 				role: /** @type {any} */ (draft.role),
@@ -122,73 +123,30 @@
 		}
 	});
 
-	/**
-	 * Which write is in flight, and which one last finished.
-	 *
-	 * Both are on screen, and that is the whole point of them. Saving a studio is
-	 * roughly a second of awaited work — the document, the owner's device entry,
-	 * then a read back from the registry, each of them signed — and until this
-	 * existed the screen said nothing for the whole of it. The field kept showing
-	 * what had been typed, because it is bound to the form rather than to what was
-	 * stored, so the app looked finished while it was not. Leaving then, by
-	 * reloading or by locking the phone, lost the write and nothing had warned
-	 * that it might (#86).
-	 */
-	let busy = $state('');
-	let settled = $state('');
-
-	/**
-	 * @param {() => Promise<void>} action
-	 * @param {string} [what] names the form this belongs to, so two forms on one
-	 *   page do not report each other's progress
-	 */
-	async function run(action, what = '') {
-		error = '';
-		busy = what;
-		settled = '';
-		try {
-			await action();
-			// Only now, and only because the actions above end by reading the
-			// registry back — this says "it is stored", not "the click was handled".
-			settled = what;
-		} catch (/** @type {any} */ cause) {
-			error = cause?.message ?? String(cause);
-		} finally {
-			busy = '';
-		}
-	}
-
-	/** @param {string} what */
-	function stateOf(what) {
-		if (busy === what) return 'saving';
-		if (settled === what) return 'saved';
-		return 'idle';
-	}
-
 	async function submitStudio(/** @type {SubmitEvent} */ event) {
 		event.preventDefault();
-		await run(() => saveStudio({ name: studioName }), 'studio');
+		await writes.run(() => saveStudio({ name: studioName }), 'studio');
 	}
 
 	async function submitLocation(/** @type {SubmitEvent} */ event) {
 		event.preventDefault();
-		await run(async () => {
+		await writes.run(async () => {
 			await saveLocation({
 				id: location.id,
 				name: { de: location.nameDe, en: location.nameEn || location.nameDe },
 				address: location.address
 			});
 			location = { id: '', nameDe: '', nameEn: '', address: '' };
-		});
+		}, 'location');
 	}
 </script>
 
 <h1 class="text-3xl font-bold">{m.studio_title()}</h1>
 
 <StudioGate>
-	{#if error}
+	{#if writes.error}
 		<p class="mt-4 text-danger" role="alert" data-testid="studio-error">
-			{m.error_generic({ reason: error })}
+			{m.error_generic({ reason: writes.error })}
 		</p>
 	{/if}
 
@@ -208,10 +166,10 @@
 			<button
 				type="submit"
 				data-testid="studio-save"
-				disabled={stateOf('studio') === 'saving'}
+				disabled={writes.stateOf('studio') === 'saving'}
 				class="justify-self-start rounded-control bg-accent px-4 py-2 font-medium text-accent-contrast disabled:opacity-50"
 			>
-				{stateOf('studio') === 'saving' ? m.saving() : m.studio_save()}
+				{writes.stateOf('studio') === 'saving' ? m.saving() : m.studio_save()}
 			</button>
 
 			<!--
@@ -224,12 +182,12 @@
 			<p
 				class="text-sm text-muted"
 				data-testid="studio-save-state"
-				data-state={stateOf('studio')}
+				data-state={writes.stateOf('studio')}
 				aria-live="polite"
 			>
-				{stateOf('studio') === 'saving'
+				{writes.stateOf('studio') === 'saving'
 					? m.saving()
-					: stateOf('studio') === 'saved'
+					: writes.stateOf('studio') === 'saved'
 						? m.saved()
 						: ''}
 			</p>
@@ -261,7 +219,7 @@
 						<button
 							type="button"
 							data-testid="location-deactivate"
-							onclick={() => run(() => deactivateLocation(entry._id))}
+							onclick={() => writes.run(() => deactivateLocation(entry._id))}
 							class="rounded-control border border-border px-2 py-1 text-sm"
 						>
 							{m.location_deactivate()}
@@ -312,9 +270,10 @@
 			<button
 				type="submit"
 				data-testid="location-add"
-				class="justify-self-start rounded-control border border-border px-4 py-2"
+				disabled={writes.stateOf('location') === 'saving'}
+				class="justify-self-start rounded-control border border-border px-4 py-2 disabled:opacity-50"
 			>
-				{m.location_add()}
+				{writes.stateOf('location') === 'saving' ? m.saving() : m.location_add()}
 			</button>
 		</form>
 	</section>
@@ -409,7 +368,7 @@
 						<button
 							type="button"
 							data-testid="device-revoke"
-							onclick={() => run(() => revokeDevice(device.deviceDid))}
+							onclick={() => writes.run(() => revokeDevice(device.deviceDid))}
 							class="rounded-control border border-border px-2 py-1 text-sm"
 						>
 							{m.device_revoke()}

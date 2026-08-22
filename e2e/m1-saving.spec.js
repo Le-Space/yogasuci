@@ -40,6 +40,33 @@ test.describe('saving a studio', () => {
 		await expect(alice.getByTestId('studio-name')).toHaveValue('Yoga Eggenfelden', READY);
 	});
 
+	test('the location form reports on itself, not on the studio', async ({ alice }) => {
+		// Two forms on one screen. Before the state was named per form, one wrapper
+		// served both and whichever finished last spoke for the other.
+		test.setTimeout(300_000);
+
+		await alice.goto('/studio/?ice=host');
+		await expect(alice.getByTestId('onboarding')).toBeVisible(READY);
+		await onboardVia(alice, 'solo');
+
+		await alice.getByTestId('studio-name').fill('Yoga Eggenfelden');
+		await alice.getByTestId('studio-save').click();
+		await expect(alice.getByTestId('studio-save-state')).toHaveAttribute(
+			'data-state',
+			'saved',
+			READY
+		);
+
+		await alice.getByTestId('location-id').fill('altstadt');
+		await alice.getByTestId('location-name-de').fill('Studio Altstadt');
+		await alice.getByTestId('location-name-en').fill('Studio Altstadt');
+		await alice.getByTestId('location-add').click();
+
+		// The studio's own line goes quiet again rather than claiming this one.
+		await expect(alice.getByTestId('studio-save-state')).toHaveAttribute('data-state', 'idle');
+		await expect(alice.locator('[data-location-id="location:altstadt"]')).toBeVisible(READY);
+	});
+
 	test('will not take a second press while the first is running', async ({ alice }) => {
 		// Not politeness: the handler is async and the button sat enabled through
 		// all of it, so a second press started a second signed write of the same
