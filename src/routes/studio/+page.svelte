@@ -122,19 +122,52 @@
 		}
 	});
 
-	/** @param {() => Promise<void>} action */
-	async function run(action) {
+	/**
+	 * Which write is in flight, and which one last finished.
+	 *
+	 * Both are on screen, and that is the whole point of them. Saving a studio is
+	 * roughly a second of awaited work — the document, the owner's device entry,
+	 * then a read back from the registry, each of them signed — and until this
+	 * existed the screen said nothing for the whole of it. The field kept showing
+	 * what had been typed, because it is bound to the form rather than to what was
+	 * stored, so the app looked finished while it was not. Leaving then, by
+	 * reloading or by locking the phone, lost the write and nothing had warned
+	 * that it might (#86).
+	 */
+	let busy = $state('');
+	let settled = $state('');
+
+	/**
+	 * @param {() => Promise<void>} action
+	 * @param {string} [what] names the form this belongs to, so two forms on one
+	 *   page do not report each other's progress
+	 */
+	async function run(action, what = '') {
 		error = '';
+		busy = what;
+		settled = '';
 		try {
 			await action();
+			// Only now, and only because the actions above end by reading the
+			// registry back — this says "it is stored", not "the click was handled".
+			settled = what;
 		} catch (/** @type {any} */ cause) {
 			error = cause?.message ?? String(cause);
+		} finally {
+			busy = '';
 		}
+	}
+
+	/** @param {string} what */
+	function stateOf(what) {
+		if (busy === what) return 'saving';
+		if (settled === what) return 'saved';
+		return 'idle';
 	}
 
 	async function submitStudio(/** @type {SubmitEvent} */ event) {
 		event.preventDefault();
-		await run(() => saveStudio({ name: studioName }));
+		await run(() => saveStudio({ name: studioName }), 'studio');
 	}
 
 	async function submitLocation(/** @type {SubmitEvent} */ event) {
@@ -175,10 +208,31 @@
 			<button
 				type="submit"
 				data-testid="studio-save"
-				class="justify-self-start rounded-control bg-accent px-4 py-2 font-medium text-accent-contrast"
+				disabled={stateOf('studio') === 'saving'}
+				class="justify-self-start rounded-control bg-accent px-4 py-2 font-medium text-accent-contrast disabled:opacity-50"
 			>
-				{m.studio_save()}
+				{stateOf('studio') === 'saving' ? m.saving() : m.studio_save()}
 			</button>
+
+			<!--
+				Said out loud, and readable by a test, because "it looked saved" was
+				exactly the failure: the input keeps showing what was typed either way.
+				`aria-live` so it is announced rather than only drawn — somebody who
+				cannot see the button greying out has no other sign that anything is
+				happening.
+			-->
+			<p
+				class="text-sm text-muted"
+				data-testid="studio-save-state"
+				data-state={stateOf('studio')}
+				aria-live="polite"
+			>
+				{stateOf('studio') === 'saving'
+					? m.saving()
+					: stateOf('studio') === 'saved'
+						? m.saved()
+						: ''}
+			</p>
 		</form>
 
 		<p class="mt-3 font-mono text-xs break-all text-faint" data-testid="owner-did">
