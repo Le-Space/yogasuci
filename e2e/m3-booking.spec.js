@@ -6,7 +6,14 @@
 // — because someone reintroduced a shared database, say — the app is handing
 // classmates each other's attendance records again.
 
-import { connectViaPaste, expect, onboard, openCourseForm, test } from './fixtures.js';
+import {
+	connectViaPaste,
+	expect,
+	onboard,
+	openCourseForm,
+	openProgramme,
+	test
+} from './fixtures.js';
 
 const READY = { timeout: 90_000 };
 const REPLICATED = { timeout: 90_000 };
@@ -20,7 +27,7 @@ test.describe('bookings', () => {
 		await expect(bob.getByTestId('join-status')).toHaveAttribute('data-state', 'joined', READY);
 
 		// --- Bob books a class ------------------------------------------------
-		await bob.getByTestId('nav-program').click();
+		await openProgramme(bob);
 		await expect(bob.locator('[data-course-id="course:vinyasa-mi-18"]')).toBeVisible(REPLICATED);
 		const card = bob.locator('[data-course-id="course:vinyasa-mi-18"]');
 		await card.getByTestId('course-book').click();
@@ -81,7 +88,7 @@ test.describe('bookings', () => {
 
 		// Nobody has published a count yet, and the app says so rather than
 		// guessing zero.
-		await bob.getByTestId('nav-program').click();
+		await openProgramme(bob);
 		await expect(course).toBeVisible(REPLICATED);
 		await expect(course.getByTestId('course-occupancy')).toContainText(
 			/unbekannt|unknown/,
@@ -95,7 +102,7 @@ test.describe('bookings', () => {
 
 		// The count reaches Bob through the programme database — the one everyone
 		// replicates — carrying a number and nothing else.
-		await bob.getByTestId('nav-program').click();
+		await openProgramme(bob);
 		await expect(course).toHaveAttribute('data-free', '0', REPLICATED);
 		await expect(course.getByTestId('course-occupancy')).toContainText(/Ausgebucht|Fully booked/);
 
@@ -149,7 +156,7 @@ test.describe('bookings', () => {
 		// test runs against is closer to a cold install.
 		await bob.getByTestId('nav-bookings').click();
 		await expect(bob.getByTestId('my-bookings')).toBeVisible();
-		await bob.getByTestId('nav-program').click();
+		await openProgramme(bob);
 		await expect(bob.locator('[data-course-id="course:vinyasa-mi-18"]')).toBeVisible(REPLICATED);
 
 		// Walking out of the studio, modelled by ending the connection rather than by
@@ -162,7 +169,7 @@ test.describe('bookings', () => {
 		await bob.getByTestId('hang-up').click();
 		await expect(bob.getByTestId('hang-up')).toHaveCount(0);
 
-		await bob.getByTestId('nav-program').click();
+		await openProgramme(bob);
 		await bob.locator('[data-course-id="course:vinyasa-mi-18"]').getByTestId('course-book').click();
 		await bob.getByTestId('nav-bookings').click();
 
@@ -234,7 +241,7 @@ test.describe('bookings', () => {
 		await bob.getByTestId('hang-up').click();
 		await expect(bob.getByTestId('sync-status')).toHaveAttribute('data-peers', '0', READY);
 
-		await bob.getByTestId('nav-program').click();
+		await openProgramme(bob);
 		const card = bob.locator('[data-course-id="course:vinyasa-mi-18"]');
 		await expect(card).toBeVisible(READY);
 		await card.getByTestId('course-book').click();
@@ -258,7 +265,7 @@ test.describe('bookings', () => {
 		await connectViaPaste(alice, bob);
 		await expect(bob.getByTestId('join-status')).toHaveAttribute('data-state', 'joined', READY);
 
-		await bob.getByTestId('nav-program').click();
+		await openProgramme(bob);
 		const card = bob.locator('[data-course-id="course:vinyasa-mi-18"]');
 		await expect(card).toBeVisible(REPLICATED);
 
@@ -289,7 +296,7 @@ async function setUpStudio(page, { capacity } = {}) {
 	await page.getByTestId('location-add').click();
 	await expect(page.locator('[data-location-id="location:altstadt"]')).toBeVisible();
 
-	await page.getByTestId('nav-program').click();
+	await openProgramme(page);
 	await expect(page.getByTestId('studio-ready')).toBeVisible(READY);
 	await openCourseForm(page);
 	await page.getByTestId('course-mode').selectOption('recurring');
@@ -304,7 +311,7 @@ async function setUpStudio(page, { capacity } = {}) {
 
 /** @param {import('@playwright/test').Page} page */
 async function bookFirstCourse(page) {
-	await page.getByTestId('nav-program').click();
+	await openProgramme(page);
 	await expect(page.locator('[data-course-id="course:vinyasa-mi-18"]')).toBeVisible(REPLICATED);
 	await page.locator('[data-course-id="course:vinyasa-mi-18"]').getByTestId('course-book').click();
 

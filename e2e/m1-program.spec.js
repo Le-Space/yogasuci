@@ -205,10 +205,11 @@ test.describe('registry and programme', () => {
 		await expect(location).toHaveAttribute('data-active', 'false');
 	});
 
-	test('shows one list at a time, courses first', async ({ alice }) => {
-		// The two used to sit under each other, so a phone had to scroll past a whole
-		// programme to reach the prices. Courses stay the default: it is what the
-		// screen is named after and what a student opens it for.
+	test('shows one list at a time, today first', async ({ alice }) => {
+		// The lists used to sit under each other, so a phone had to scroll past a
+		// whole programme to reach the prices. Today is the default now: what the
+		// screen is named after is an argument about the name, and somebody
+		// standing in the doorway wants the class that is on (#76).
 		test.setTimeout(240_000);
 
 		await onboard(alice);
@@ -216,6 +217,11 @@ test.describe('registry and programme', () => {
 		await alice.getByTestId('studio-save').click();
 		await alice.getByTestId('nav-program').click();
 		await expect(alice.getByTestId('studio-ready')).toBeVisible(READY);
+
+		await expect(alice.getByTestId('tab-today')).toHaveAttribute('aria-selected', 'true');
+		await expect(alice.getByTestId('course-list')).toBeHidden();
+
+		await alice.getByTestId('tab-courses').click();
 
 		await expect(alice.getByTestId('tab-courses')).toHaveAttribute('aria-selected', 'true');
 		await expect(alice.getByTestId('course-list')).toBeVisible();

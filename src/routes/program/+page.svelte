@@ -12,6 +12,7 @@
 	import StudioGate from '$lib/components/StudioGate.svelte';
 	import { createWrites } from '$lib/ui/writes.svelte.js';
 	import { locationsStore } from '$lib/db/registry.js';
+	import { classesOn, nextClassAfter } from '$lib/program/today.js';
 	import {
 		coursesStore,
 		courseWindow,
@@ -27,7 +28,7 @@
 	import { generateSessions } from '$lib/program/sessions.js';
 	import { canEditStore, joinedStudioStore } from '$lib/db/join.js';
 	import { studiosStore } from '$lib/db/studios.js';
-	import { nextOccurrence } from '$lib/program/sessions.js';
+	import { addDays, nextOccurrence } from '$lib/program/sessions.js';
 	import { bookingsStore, cancelBooking, requestBooking } from '$lib/db/bookings.js';
 	import { connectedPeersStore } from '$lib/p2p/node.js';
 	import { readOccupancy } from '$lib/db/occupancy.js';
@@ -57,21 +58,27 @@
 	let packageFormOpen = $state(false);
 
 	/**
-	 * Which of the two lists is on screen. Courses first: it is what the screen is
-	 * named after and what a student opens it for.
+	 * Which of the three lists is on screen.
 	 *
-	 * @type {'courses' | 'packages'}
+	 * Today first, and what the screen opens on. The full programme is what a
+	 * studio maintains; what somebody standing in the doorway wants is the class
+	 * that is on now, and making them read a list of everything to find it is the
+	 * wrong way round (#76). Courses used to be the default for the opposite
+	 * reason — it is what the screen is named after — which is an argument about
+	 * the name rather than about the person holding the phone.
+	 *
+	 * @type {'today' | 'courses' | 'packages'}
 	 */
-	let tab = $state('courses');
+	let tab = $state('today');
 
 	/**
 	 * Typed here rather than inline, so assigning one to `tab` type-checks. An
 	 * inline array widens to `string[]`, which svelte-check catches — and it is
 	 * right to: the ids also name the panel elements the tabs point at.
 	 *
-	 * @type {readonly ('courses' | 'packages')[]}
+	 * @type {readonly ('today' | 'courses' | 'packages')[]}
 	 */
-	const TABS = ['courses', 'packages'];
+	const TABS = ['today', 'courses', 'packages'];
 
 	// The owner, or a device the owner approved. Everyone else replicates the
 	// programme read-only: the ACL refuses their writes, and hiding the forms is
@@ -145,6 +152,39 @@
 	}
 
 	const today = new Date().toISOString().slice(0, 10);
+
+	// The day view, over the courses this device already has. No database, no
+	// signature, no access control — a selection over data that is here (#76).
+	let todaysClasses = $derived(classesOn($coursesStore, today));
+	let nextClass = $derived(todaysClasses.length ? null : nextClassAfter($coursesStore, today));
+
+	/**
+	 * The location, but only for a studio that has more than one.
+	 *
+	 * That is what the line is for: it decides where somebody walks. A studio with
+	 * a single room would be told its own name on every row, which is noise.
+	 *
+	 * @param {string} locationId
+	 */
+	function whereIfItMatters(locationId) {
+		return $locationsStore.length > 1 ? locationName(locationId) : '';
+	}
+
+	/**
+	 * "tomorrow", or the day named.
+	 *
+	 * @param {string} date
+	 */
+	function whenIn(date) {
+		return date === addDays(today, 1)
+			? m.today_tomorrow()
+			: new Date(`${date}T00:00:00.000Z`).toLocaleDateString(getLocale(), {
+					weekday: 'long',
+					day: 'numeric',
+					month: 'long',
+					timeZone: 'UTC'
+				});
+	}
 
 	/**
 	 * The classes another studio is currently running.
@@ -358,9 +398,58 @@
 					? 'border-b-2 border-accent text-text'
 					: 'text-muted'}"
 			>
-				{name === 'courses' ? m.courses_title() : m.packages_title()}
+				{name === 'today'
+					? m.today_title()
+					: name === 'courses'
+						? m.courses_title()
+						: m.packages_title()}
 			</button>
 		{/each}
+	</div>
+
+	<div
+		class="mt-6 rounded-card border border-border bg-surface p-6"
+		id="panel-today"
+		role="tabpanel"
+		aria-labelledby="tab-today"
+		hidden={tab !== 'today'}
+	>
+		{#if todaysClasses.length}
+			<ul class="grid gap-2" data-testid="today-list">
+				{#each todaysClasses as entry (entry.course._id)}
+					<li
+						class="flex flex-wrap items-baseline gap-3 border-b border-border pb-2"
+						data-testid="today-item"
+						data-course-id={entry.course._id}
+					>
+						<span class="font-mono text-sm">{entry.time}</span>
+						<span class="flex-1">
+							{localized(entry.course.title, getLocale())}
+							{#if whereIfItMatters(entry.course.locationId)}
+								<span class="text-faint">· {whereIfItMatters(entry.course.locationId)}</span>
+							{/if}
+						</span>
+					</li>
+				{/each}
+			</ul>
+		{:else}
+			<!--
+				An empty list is an answer and a poor one: it leaves somebody to open
+				the full programme and work the next date out for themselves. Naming it
+				is the same information one step further on (#76).
+			-->
+			<p class="text-sm text-muted" data-testid="today-empty">
+				{#if nextClass}
+					{m.today_next({
+						when: whenIn(nextClass.date),
+						time: nextClass.time,
+						title: localized(nextClass.course.title, getLocale())
+					})}
+				{:else}
+					{m.today_none()}
+				{/if}
+			</p>
+		{/if}
 	</div>
 
 	<div

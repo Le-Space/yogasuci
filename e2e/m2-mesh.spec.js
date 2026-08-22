@@ -11,13 +11,14 @@
 // about whether the transport supports a mesh. It already did.
 
 import {
-	test,
-	expect,
 	connectViaPaste,
+	expect,
 	newActor,
 	onboard as onboardVia,
 	openConnect,
-	openCourseForm
+	openCourseForm,
+	openProgramme,
+	test
 } from './fixtures.js';
 
 const READY = { timeout: 90_000 };
@@ -148,12 +149,12 @@ test.describe('a front desk with more than one device on it', () => {
 		// The part a count cannot show: not "three devices are attached" but "a
 		// write reaches all three". Live, over the connections that already exist,
 		// which is where an ungrafted topic mesh goes quiet.
-		await alice.getByTestId('nav-program').click();
+		await openProgramme(alice);
 		await expect(alice.getByTestId('studio-ready')).toBeVisible(READY);
 		await addCourse(alice, 'yin-fr-19', 'Yin Yoga');
 
 		for (const leaf of leaves) {
-			await leaf.getByTestId('nav-program').click();
+			await openProgramme(leaf);
 			await expect(leaf.locator('[data-course-id="course:yin-fr-19"]')).toBeVisible(REPLICATED);
 		}
 
