@@ -327,6 +327,7 @@
 	"tickets_demo_notice": "Beispieldaten: Diese Karten zeigen den Guthaben-Reducer. Echte Käufe entstehen ab Meilenstein M4.",
 	"tickets_demo_ten": "10er-Karte, dreimal genutzt",
 	"tickets_none": "Noch keine Karte gekauft.",
+	"tickets_waiting_for_key": "Deine Karten sind noch nicht verfügbar. Sie sind verschlüsselt, und dein Studio muss deinem Gerät erst den Schlüssel geben — das geschieht bei der nächsten Verbindung von selbst.",
 	"till_cash_received": "Bar erhalten",
 	"till_none": "Noch kein Schülergerät verbunden.",
 	"till_package": "Karte",

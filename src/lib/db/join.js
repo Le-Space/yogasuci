@@ -76,7 +76,10 @@ export function rememberPendingDevice(hello) {
 	// pointed at a different database by whoever is standing in front of it.
 	const ownerDid = get(studioStore)?.ownerDid;
 	if (ownerDid) {
-		openStudentTickets(hello.did, ownerDid).catch((error) => {
+		// The student's own encryption key travels with the introduction, and the
+		// ledger key has to be sealed to it — without this the studio would open the
+		// ledger and leave the student unable to read their own passes (#95).
+		openStudentTickets(hello.did, ownerDid, hello.encryptionKey ?? '').catch((error) => {
 			console.warn('Could not open the introducing device’s ledger:', error);
 		});
 	}

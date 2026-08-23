@@ -15,6 +15,38 @@ import { keyStoreName } from './key-store.js';
 export const keyStoreDbStore = writable(/** @type {any} */ (null));
 
 /**
+ * Opens in flight, by database name.
+ *
+ * OrbitDB caches an open database by address, but it writes that cache *after*
+ * building the database — so two calls that arrive together both build one, and
+ * the second replaces the first. Writer and reader then hold different
+ * instances of the same database and neither sees the other's entries.
+ *
+ * That is not hypothetical here. The registry subscription fires for the device
+ * list and for the studio document, and each firing shares the bookings key and
+ * the ledger keys — several opens of this one store within a tick. It showed up
+ * as one student's key arriving and another's not, under concurrency rather
+ * than under load: the same tests passed at a higher load average when run on
+ * their own.
+ *
+ * @type {Map<string, Promise<any>>}
+ */
+const opening = new Map();
+
+/**
+ * @param {string} name
+ * @param {() => Promise<any>} build
+ */
+function once(name, build) {
+	const running = opening.get(name);
+	if (running) return running;
+
+	const promise = build().finally(() => opening.delete(name));
+	opening.set(name, promise);
+	return promise;
+}
+
+/**
  * Open the store this device writes its shared copies into.
  *
  * @returns {Promise<any>}
@@ -23,11 +55,13 @@ export async function openOwnKeyStore() {
 	const own = get(ownDidStore);
 	if (!own) throw new Error('This device has no identity yet.');
 
-	const db = await openDocuments({
-		key: 'keys',
-		name: keyStoreName(own),
-		accessController: OrbitDBAccessController({ write: [own] })
-	});
+	const db = await once(keyStoreName(own), () =>
+		openDocuments({
+			key: 'keys',
+			name: keyStoreName(own),
+			accessController: OrbitDBAccessController({ write: [own] })
+		})
+	);
 
 	keyStoreDbStore.set(db);
 	return db;
@@ -44,9 +78,11 @@ export async function openOwnKeyStore() {
  * @returns {Promise<any>}
  */
 export async function openKeyStoreOf(did) {
-	return openDocuments({
-		key: `keys:${did}`,
-		name: keyStoreName(did),
-		accessController: OrbitDBAccessController({ write: [did] })
-	});
+	return once(keyStoreName(did), () =>
+		openDocuments({
+			key: `keys:${did}`,
+			name: keyStoreName(did),
+			accessController: OrbitDBAccessController({ write: [did] })
+		})
+	);
 }

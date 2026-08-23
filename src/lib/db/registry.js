@@ -313,3 +313,24 @@ function requireDb() {
 	if (!db) throw new Error('The registry is not open.');
 	return db;
 }
+
+/**
+ * Everyone who should be able to read a studio's data, with the key to seal it
+ * to them.
+ *
+ * Read from the device list rather than assembled from roles: the owner has an
+ * entry of her own (`registerOwnerDevice`), so one list covers her and every
+ * device she has approved, and a revoked device drops out by the same rule that
+ * takes away its write access.
+ *
+ * A device with no published encryption key is still listed. Leaving it out
+ * here would make it silently unreachable; passing it on lets the sharer say
+ * who could not be served (#95).
+ *
+ * @returns {import('./database-keys.js').Holder[]}
+ */
+export function studioHolders() {
+	return get(devicesStore)
+		.filter((device) => !device.revokedAt)
+		.map((device) => ({ did: device.deviceDid, encryptionKey: device.encryptionKey ?? '' }));
+}
