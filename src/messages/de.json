@@ -66,6 +66,8 @@
 	"connect_ready_hint": "Der QR-Code enthält die Einladung. Das andere Gerät scannt ihn — oder du schickst den Link.",
 	"connect_ready_title": "Zum Verbinden scannen",
 	"connect_refresh": "Einladung erneuern",
+	"connect_relay": "Relay verwenden, wenn direkt nichts geht",
+	"connect_relay_hint": "Aus. Ohne diese Wahl ruft dieses Gerät niemanden an — es wartet auf einen gescannten Code. Eingeschaltet kann ein Relay eine Verbindung vermitteln, wenn beide Seiten hinter Mobilfunk-NAT sitzen und ein Code allein nichts nützt. Der Relay erfährt dabei, dass zwei Geräte zueinander wollen, und ihre IP-Adressen — nicht, was sie austauschen. Wirkt beim nächsten Start der App.",
 	"connect_renewing": "Neuer Code wird erstellt …",
 	"connect_reply_hint": "Fast fertig. Das andere Gerät braucht noch diese Antwort — scannen lassen oder zurückschicken.",
 	"connect_reply_orphan": "Diese Antwort gehört zu einer Einladung, die dieses Tab nicht erzeugt hat. Öffne den Link in dem Tab, in dem die Einladung steht — oder erzeuge hier eine neue.",

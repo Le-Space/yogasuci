@@ -57,6 +57,26 @@ ausdrücklich und nicht voreingestellt, und deshalb werden eingebackene
 Adressen vor einer Verzeichnisabfrage geprüft: Wer die App im Studio benutzt,
 soll nicht einmal ein Verzeichnis kontaktieren.
 
+### 1.3a Was ein eingeschalteter Relay preisgibt
+
+Der Relay ist aus, und aus heißt hier mehr als „Voreinstellung": Ohne die Wahl
+gibt es keine Bootstrap-Liste, kein angekündigtes `/p2p-circuit` und ein
+`denyDialMultiaddr`, das jede Adresse ablehnt, die keine QR-Sitzung ist. Ein
+Gerät, das ihn nie einschaltet, ruft niemanden an — nachprüfbar in
+`src/lib/p2p/libp2p-config.spec.js`.
+
+Wer ihn einschaltet, gibt zweierlei preis, und beides steht hier statt in der
+Oberfläche: Der Relay erfährt, **dass** zwei Geräte zueinander wollen, und er
+erfährt **ihre IP-Adressen**. Er erfährt nicht, was sie austauschen — die
+Nutzdaten sind zwischen den Peers verschlüsselt, und Buchungen und gekaufte
+Karten zusätzlich auf Anwendungsebene (§1.3, #95).
+
+Was er ebenfalls nicht bekommt: Datenbankadressen. Die Ledger-Adresse eines
+Schülers geht erst hinaus, nachdem dieses Gerät dem Studio des Gegenübers
+beigetreten ist — vorher trägt die Vorstellung sie nicht. Solange ein
+QR-Handschlag die einzige Art war, verbunden zu werden, war das gleichgültig:
+Wer fragen konnte, stand im Raum. Mit Peer-Discovery ist es das nicht mehr.
+
 ### 1.3 Privacy: OrbitDB repliziert ganze Datenbanken — und kennt keine Leserechte
 
 Zwei getrennte Punkte, die oft vermischt werden:

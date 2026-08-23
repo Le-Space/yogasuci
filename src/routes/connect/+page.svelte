@@ -37,6 +37,7 @@
 	import { buildLink, readLink } from '$lib/p2p/invite.js';
 	import { iceMode, rtcConfiguration } from '$lib/p2p/libp2p-config.js';
 	import { setShortCodeEnabled, shortCodeEnabled } from '$lib/p2p/short-code.js';
+	import { relayEnabled, setRelayEnabled } from '$lib/p2p/relay.js';
 	import { syncWakeLock } from '$lib/p2p/wake-lock.js';
 	import { createHandoff } from '$lib/p2p/handoff.js';
 	import { canEditProgram, introduceToPeer, joinStore, joinStudioFromPeer } from '$lib/db/join.js';
@@ -84,6 +85,7 @@
 	 * corrects it, which is also the only place it can be read honestly.
 	 */
 	let shortCode = $state(false);
+	let relay = $state(false);
 
 	/**
 	 * Whether this device's code is off screen because it has been used.
@@ -425,6 +427,7 @@
 
 	onMount(() => {
 		shortCode = shortCodeEnabled();
+		relay = relayEnabled();
 
 		// Loaded in the browser only: this page renders on the server first, where
 		// `customElements` does not exist.
@@ -640,6 +643,21 @@
 			failure = error?.message ?? String(error);
 			step = 'failed';
 		}
+	}
+
+	/**
+	 * Turn the relay on or off for the next start.
+	 *
+	 * Deliberately without restarting the node here. Tearing the stack down to
+	 * apply a checkbox would drop every connection this screen exists to make,
+	 * and somebody ticking it mid-handshake would lose the handshake. The hint
+	 * says when it takes effect instead of the box lying about it (#94).
+	 *
+	 * @param {boolean} enabled
+	 */
+	function chooseRelay(enabled) {
+		relay = enabled;
+		setRelayEnabled(enabled);
 	}
 
 	/**
@@ -1123,6 +1141,31 @@
 			<span>
 				{m.connect_short_code()}
 				<span class="mt-1 block text-xs text-muted">{m.connect_short_code_hint()}</span>
+			</span>
+		</label>
+
+		<!--
+			Off, and off means more than a default: without this the node has no
+			bootstrap list, announces no `/p2p-circuit`, and refuses to dial anything
+			that is not a QR session — checked in libp2p-config.spec.js rather than
+			promised in prose (#94).
+
+			The cost is in the hint rather than left to be discovered. A relay does
+			not see what two devices exchange; it does see that they want each other
+			and where they are. Whoever ticks this should know which of the two they
+			are agreeing to.
+		-->
+		<label class="mt-4 flex items-start gap-3 text-sm">
+			<input
+				type="checkbox"
+				data-testid="use-relay"
+				checked={relay}
+				onchange={(event) => chooseRelay(event.currentTarget.checked)}
+				class="mt-1 shrink-0"
+			/>
+			<span>
+				{m.connect_relay()}
+				<span class="mt-1 block text-xs text-muted">{m.connect_relay_hint()}</span>
 			</span>
 		</label>
 
