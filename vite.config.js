@@ -109,6 +109,22 @@ export default defineConfig({
 			})
 		)
 	],
+	/**
+	 * Never bundle the WebRTC transport into the server build.
+	 *
+	 * It reaches `node-datachannel`, a native addon with per-platform prebuilds.
+	 * The server bundle exists only so SvelteKit can prerender these pages, and
+	 * every route here is `ssr = false` — nothing in it ever runs this code. On
+	 * macOS the addon is simply absent, so Vite leaves it alone and the build
+	 * passes; on Linux it installs, gets pulled into the SSR graph, and the build
+	 * ends after 47 modules. What surfaces then is `vite-plugin-pwa` complaining
+	 * about an empty precache, because rollup is already tearing down — an error
+	 * that says nothing about the cause and cost an hour of looking at the wrong
+	 * thing (#94).
+	 */
+	ssr: {
+		external: ['@libp2p/webrtc', 'node-datachannel']
+	},
 	define: {
 		__APP_VERSION__: JSON.stringify(release),
 		__BUILD_DATE__: JSON.stringify(buildDate),
