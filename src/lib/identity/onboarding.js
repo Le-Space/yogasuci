@@ -15,7 +15,7 @@ import { openProgram, programDbStore } from '../db/program.js';
 import { openJoinedStudios } from '../db/open-studios.js';
 import { clearStudios } from '../db/studios.js';
 import { grantStudioDevices, openOwnBookings } from '../db/bookings.js';
-import { openOwnTickets, ticketsDbStore } from '../db/tickets.js';
+import { openOwnTickets, shareOpenLedgerKeys, ticketsDbStore } from '../db/tickets.js';
 import { devicesStore, studioStore } from '../db/registry.js';
 import {
 	createPasskeyCredential,
@@ -173,6 +173,11 @@ async function boot(obtainCredential) {
 		// device list, and either can arrive by replication after this point.
 		const regrant = () => {
 			grantStudioDevices().catch(() => {});
+			// And the ledgers already open. A device approved after a student has
+			// been seen today would otherwise be able to write to that student's
+			// ledger and unable to read it — the registry grants the first and says
+			// nothing about the second (#95).
+			shareOpenLedgerKeys().catch(() => {});
 		};
 		devicesStore.subscribe(regrant);
 		studioStore.subscribe(regrant);

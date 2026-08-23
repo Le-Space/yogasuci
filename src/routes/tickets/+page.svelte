@@ -16,6 +16,8 @@
 	import StudioGate from '$lib/components/StudioGate.svelte';
 	import { buildExport, countEvents, downloadExport, exportFilename } from '$lib/db/export.js';
 	import { ownDidStore } from '$lib/p2p/node.js';
+	import { waitingForKeys } from '$lib/db/encrypted-open.js';
+	import { ticketLedgerName } from '$lib/db/tickets.js';
 	import * as m from '$lib/paraglide/messages.js';
 
 	let tickets = $state(/** @type {any[]} */ ([]));
@@ -66,12 +68,26 @@
 			cancelled = true;
 		};
 	});
+
+	// Named for this device's own ledger rather than "anything is waiting": a
+	// counter can be waiting for one student's books while reading another's.
+	let waitingForOwnLedger = $derived(
+		Boolean($ownDidStore) && $waitingForKeys.has(ticketLedgerName($ownDidStore ?? ''))
+	);
 </script>
 
 <h1 class="text-3xl font-bold">{m.nav_tickets()}</h1>
 
 <StudioGate>
-	{#if tickets.length === 0}
+	<!--
+		Two ways to have no passes on screen, and they need opposite answers. Not
+		having bought one is a fact. Not being able to read the ledger yet is a
+		wait, and saying "no passes bought" there would be a lie told to the one
+		person who knows they bought one (#95).
+	-->
+	{#if waitingForOwnLedger}
+		<p class="mt-6 text-muted" data-testid="tickets-waiting">{m.tickets_waiting_for_key()}</p>
+	{:else if tickets.length === 0}
 		<p class="mt-6 text-faint" data-testid="tickets-empty">{m.tickets_none()}</p>
 	{:else}
 		<div class="mt-6 grid gap-4">

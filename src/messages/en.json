@@ -327,6 +327,7 @@
 	"tickets_demo_notice": "Sample data: these passes exercise the balance reducer. Real purchases arrive with milestone M4.",
 	"tickets_demo_ten": "10-class pass, used three times",
 	"tickets_none": "No pass bought yet.",
+	"tickets_waiting_for_key": "Your passes are not available yet. They are encrypted, and your studio has to give this device the key — which happens on the next connection, without anybody doing anything.",
 	"till_cash_received": "Cash received",
 	"till_none": "No student device connected yet.",
 	"till_package": "Pass",

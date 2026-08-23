@@ -22,8 +22,12 @@
 
 import { get, writable } from 'svelte/store';
 
-import { forgetDatabase, openDocuments, readAll } from './open.js';
+import { forgetDatabase, readAll } from './open.js';
 import { OpenSet } from './lru.js';
+import { openEncrypted } from './encrypted-open.js';
+import { obtainKey } from './database-keys.js';
+import { openOwnKeyStore } from './open-key-stores.js';
+import { studioHolders, studioStore } from './registry.js';
 import { studioAccessController } from './studio-acl.js';
 import { signEvent } from './ledger-signing.js';
 import { canRedeem, nextChainPosition } from '../ledger/index.js';
@@ -94,16 +98,34 @@ export async function openOwnTickets({ ownerDid }) {
 	if (!own) throw new Error('This device has no identity yet.');
 	if (!ownerDid) throw new Error('This device does not belong to a studio yet.');
 
-	const db = await openDocuments({
+	// The books belong to the studio, not to the student (docs/PLAN.md §3.4), and
+	// so does the key: the owner makes it and leaves a copy for this device. A
+	// student therefore waits for their own passes to become readable, which is
+	// the one place this design asks somebody to wait for something that is
+	// theirs — and the alternative is a ledger anybody who reaches it can read.
+	/** @param {any} db */
+	const attach = async (db) => {
+		ticketsDbStore.set(db);
+		db.events.on('update', () => refreshTickets());
+		await refreshTickets();
+	};
+
+	const db = await openEncrypted({
 		key: 'tickets',
 		name: ticketLedgerName(own),
-		accessController: studioAccessController(ownerDid)
+		accessController: studioAccessController(ownerDid),
+		sharerDid: ownerDid,
+		holders: own === ownerDid ? studioHolders() : [],
+		// A student waits for their own passes here, which is the one place this
+		// design asks that. The copy comes from the studio, so it cannot be there
+		// before the studio has seen this device — and without picking it up
+		// afterwards the ledger would stay shut for the rest of the session.
+		onLater: attach
 	});
 
-	ticketsDbStore.set(db);
-	db.events.on('update', () => refreshTickets());
-	await refreshTickets();
+	if (!db) return null;
 
+	await attach(db);
 	return db;
 }
 
@@ -256,30 +278,59 @@ export async function redeemTicket({ db, state, courseId, date, redeemedBy }) {
  * @param {string} studentDid
  * @param {string} ownerDid
  */
-export async function openStudentTickets(studentDid, ownerDid) {
+export async function openStudentTickets(studentDid, ownerDid, studentEncryptionKey = '') {
+	// Re-seal for this student before anything else, because their published key
+	// may have changed since the last time they were here. A device that was
+	// wiped and recovered comes back with the same DID and a *new* encryption key
+	// pair — the same identity, a different letterbox — so the copy waiting for it
+	// opens with a private key that no longer exists. Sealing again on every
+	// introduction is what makes recovery work at all, and it has to happen above
+	// the early return below rather than inside the open (#95).
+	await reshareLedgerKey(studentDid, ownerDid, studentEncryptionKey);
+
 	// Already open: mark it as the newest and leave it alone. Re-opening would be
 	// wasted work and would reset the update listener.
 	if (openStudentLedgers.touch(studentDid)) {
 		return get(studentTicketsStore).get(studentDid)?.db;
 	}
 
-	const db = await openDocuments({
-		key: `tickets:${studentDid}`,
-		name: ticketLedgerName(studentDid),
-		accessController: studioAccessController(ownerDid)
-	});
+	// Opened at the counter. The owner shares this ledger's key, so an approved
+	// front-desk device waits for its copy exactly as the student does — being
+	// allowed to write is a separate question from being able to read, and the
+	// registry answers only the first.
+	/** @param {any} db */
+	const attach = async (db) => {
+		const load = async () => {
+			const events = await readAll(db);
+			studentTicketsStore.update((all) => {
+				const next = new Map(all);
+				next.set(studentDid, { did: studentDid, db, events });
+				return next;
+			});
+		};
 
-	const load = async () => {
-		const events = await readAll(db);
-		studentTicketsStore.update((all) => {
-			const next = new Map(all);
-			next.set(studentDid, { did: studentDid, db, events });
-			return next;
-		});
+		db.events.on('update', load);
+		await load();
 	};
 
-	db.events.on('update', load);
-	await load();
+	const db = await openEncrypted({
+		key: `tickets:${studentDid}`,
+		name: ticketLedgerName(studentDid),
+		accessController: studioAccessController(ownerDid),
+		sharerDid: ownerDid,
+		holders:
+			get(ownDidStore) === ownerDid
+				? [...studioHolders(), { did: studentDid, encryptionKey: studentEncryptionKey }]
+				: [],
+		// An approved counter device waits too. Being allowed to write is a
+		// different question from being able to read, and the registry answers only
+		// the first — the key comes from the owner and may arrive later.
+		onLater: attach
+	});
+
+	if (!db) return null;
+
+	await attach(db);
 
 	await openStudentLedgers.add(studentDid, db);
 
@@ -384,4 +435,71 @@ function addDays(date, days) {
 	const parsed = new Date(`${date}T00:00:00.000Z`);
 	parsed.setUTCDate(parsed.getUTCDate() + days);
 	return parsed.toISOString().slice(0, 10);
+}
+
+/**
+ * Give every studio device a copy of the key to each ledger already open.
+ *
+ * The gap this closes has no test above it, because no test approves a device
+ * after a ledger has been opened — and that is the ordinary act: a new iPad at
+ * the second counter, which then has to read the passes of the students who
+ * were already here today. `openStudentTickets` only runs when a student
+ * introduces itself, so nothing else would ever seal the key for the newcomer.
+ *
+ * Only the owner shares these keys, and only with devices: the student was
+ * served when their ledger was first opened, and their published key is not
+ * around any more by this point.
+ */
+export async function shareOpenLedgerKeys() {
+	const own = get(ownDidStore);
+	const ownerDid = get(studioStore)?.ownerDid;
+	if (!own || own !== ownerDid) return;
+
+	const holders = studioHolders();
+	if (holders.length === 0) return;
+
+	const store = await openOwnKeyStore().catch(() => null);
+	if (!store) return;
+
+	for (const studentDid of get(studentTicketsStore).keys()) {
+		try {
+			await obtainKey({
+				name: ticketLedgerName(studentDid),
+				ownDid: own,
+				isSharer: true,
+				ownStore: store,
+				holders
+			});
+		} catch (error) {
+			console.warn(`Could not share the ledger key for ${studentDid}:`, error);
+		}
+	}
+}
+
+/**
+ * Seal this ledger's key to a student's current published key.
+ *
+ * Only the owner does this, and only when the student has published a key. Does
+ * nothing when there is no key to seal yet — the ledger is created on the first
+ * introduction, and `obtainKey` makes and shares the key there.
+ *
+ * @param {string} studentDid
+ * @param {string} ownerDid
+ * @param {string} studentEncryptionKey
+ */
+async function reshareLedgerKey(studentDid, ownerDid, studentEncryptionKey) {
+	const own = get(ownDidStore);
+	if (!own || own !== ownerDid || !studentEncryptionKey) return;
+
+	try {
+		await obtainKey({
+			name: ticketLedgerName(studentDid),
+			ownDid: own,
+			isSharer: true,
+			ownStore: await openOwnKeyStore(),
+			holders: [...studioHolders(), { did: studentDid, encryptionKey: studentEncryptionKey }]
+		});
+	} catch (error) {
+		console.warn(`Could not re-share the ledger key for ${studentDid}:`, error);
+	}
 }

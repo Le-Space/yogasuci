@@ -18,7 +18,11 @@
 
 import { get, writable } from 'svelte/store';
 
-import { openDocuments, readAll } from './open.js';
+import { openEncrypted } from './encrypted-open.js';
+import { obtainKey } from './database-keys.js';
+import { openOwnKeyStore } from './open-key-stores.js';
+import { studioHolders } from './registry.js';
+import { readAll } from './open.js';
 import { devicesStore, studioStore } from './registry.js';
 import { nodeStatusStore, ownDidStore } from '../p2p/node.js';
 
@@ -52,13 +56,20 @@ export async function openOwnBookings({ address } = {}) {
 	const own = get(ownDidStore);
 	if (!own) throw new Error('This device has no identity yet.');
 
-	const db = await openDocuments({
+	// Sealed, and this device holds the key: the bookings are its own, so it makes
+	// the key and leaves a copy for the studio (#95). Which means a student never
+	// waits for their own bookings — only for what somebody else shares.
+	const db = await openEncrypted({
 		key: 'bookings',
 		// The DID is in the name so two students never collide, and so a studio
 		// device can tell whose database it is looking at.
 		name: `yoga-bookings-${own}`,
-		address
+		address,
+		sharerDid: own,
+		holders: studioHolders()
 	});
+
+	if (!db) return null;
 
 	bookingsDbStore.set(db);
 	db.events.on('update', () => refreshBookings());
@@ -83,6 +94,13 @@ export async function refreshBookings() {
  * this can run on every open and after every registry change.
  */
 export async function grantStudioDevices() {
+	// The key travels the same way, and for the same reason. When this database
+	// was first opened its owner belonged to no studio, so there was nobody to
+	// seal a copy for — `studioHolders()` was empty and the studio would have
+	// waited for a key that was never coming. Joining, and every later approval,
+	// arrives here (#95).
+	await shareOwnBookingsKey();
+
 	const db = get(bookingsDbStore);
 	if (!db?.access?.grant) return;
 
@@ -191,23 +209,41 @@ export async function openStudentBookings(studentDid, address) {
 	// Opened by address, so the name is never used — but the key keeps the
 	// address remembered, which is what lets a studio device find this student
 	// again after a reload.
-	const db = await openDocuments({
-		key: `bookings:${studentDid}`,
-		name: `yoga-bookings-${studentDid}`,
-		address
-	});
-	const load = async () => {
-		const bookings = await readAll(db);
-		studentBookingsStore.update((all) => {
-			const next = new Map(all);
-			next.set(studentDid, { did: studentDid, db, bookings });
-			return next;
-		});
+	//
+	// The student made this key, so the copy for this device is in *their* store.
+	// Until it has replicated there is nothing to open, and opening it anyway
+	// would write in the clear beside their sealed entries.
+	//
+	// `onLater` is not a nicety here, it is the ordinary case: this runs the
+	// moment the student introduces itself, which is before that student has seen
+	// the registry and therefore before it knows whom to seal a key for. The copy
+	// follows seconds later.
+	/** @param {any} db */
+	const attach = async (db) => {
+		const load = async () => {
+			const bookings = await readAll(db);
+			studentBookingsStore.update((all) => {
+				const next = new Map(all);
+				next.set(studentDid, { did: studentDid, db, bookings });
+				return next;
+			});
+		};
+
+		db.events.on('update', load);
+		await load();
 	};
 
-	db.events.on('update', load);
-	await load();
+	const db = await openEncrypted({
+		key: `bookings:${studentDid}`,
+		name: `yoga-bookings-${studentDid}`,
+		address,
+		sharerDid: studentDid,
+		onLater: attach
+	});
 
+	if (!db) return null;
+
+	await attach(db);
 	return db;
 }
 
@@ -215,4 +251,32 @@ function requireDb() {
 	const db = get(bookingsDbStore);
 	if (!db) throw new Error('The bookings database is not open.');
 	return db;
+}
+
+/**
+ * Leave a copy of this database's key for every studio device.
+ *
+ * Separate from the ACL grants above only because it can fail differently: a
+ * device that has published no encryption key cannot be sealed for, and that is
+ * worth naming rather than retrying forever.
+ *
+ * Idempotent by construction — `obtainKey` returns the key it already has and
+ * writes a copy per holder, and writing the same copy twice is one document.
+ */
+export async function shareOwnBookingsKey() {
+	const own = get(ownDidStore);
+	const holders = studioHolders();
+	if (!own || holders.length === 0) return;
+
+	try {
+		await obtainKey({
+			name: `yoga-bookings-${own}`,
+			ownDid: own,
+			isSharer: true,
+			ownStore: await openOwnKeyStore(),
+			holders
+		});
+	} catch (error) {
+		console.warn('Could not share the bookings key with the studio:', error);
+	}
 }
