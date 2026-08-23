@@ -39,11 +39,36 @@ describe('a node nobody asked to use a relay', () => {
 });
 
 describe('a node somebody did ask', () => {
-	it('announces a circuit address and bootstraps from the relay', () => {
+	it('announces a circuit address and both kinds of discovery', () => {
+		// Two, and they answer different questions: `bootstrap` is how this node
+		// reaches the relay at all, `pubsubPeerDiscovery` is how it learns about
+		// everyone else who did the same. Counted rather than merely "not empty",
+		// so dropping one of them fails here instead of quietly halving what the
+		// relay is for (#94).
 		const config = createLibp2pConfig({ relayOptIn: true, relayBootstrapAddrs: [RELAY] });
 
 		expect(config.addresses.listen).toEqual(['/p2p-circuit']);
-		expect(config.peerDiscovery).toHaveLength(1);
+		expect(config.peerDiscovery).toHaveLength(2);
+	});
+
+	it('hole punches, so a relayed connection can become a direct one', () => {
+		// Without DCUtR a circuit stays a circuit, and "the relay brokers the
+		// connection and the data then flows directly" would be a sentence with
+		// nothing behind it — while the relay's own duration limit ends the
+		// connection anyway.
+		const config = createLibp2pConfig({ relayOptIn: true, relayBootstrapAddrs: [RELAY] });
+
+		expect(config.services.dcutr).toBeDefined();
+	});
+
+	it('takes the transports it cannot import itself', () => {
+		// `webRTC()` is handed in rather than imported by the config: it reaches a
+		// native module node does not have, and importing it here stopped this very
+		// file from loading — which took the "no outbound call" guard with it.
+		const marker = () => 'webrtc';
+		const config = createLibp2pConfig({ relayOptIn: true, extraTransports: [marker] });
+
+		expect(config.transports).toContain(marker);
 	});
 
 	it('asks for nothing when there is no address to ask', () => {

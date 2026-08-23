@@ -37,7 +37,13 @@
 	import { buildLink, readLink } from '$lib/p2p/invite.js';
 	import { iceMode, rtcConfiguration } from '$lib/p2p/libp2p-config.js';
 	import { setShortCodeEnabled, shortCodeEnabled } from '$lib/p2p/short-code.js';
-	import { relayEnabled, setRelayEnabled } from '$lib/p2p/relay.js';
+	import {
+		isUsableRelayAddress,
+		relayAddress,
+		relayEnabled,
+		setRelayAddress,
+		setRelayEnabled
+	} from '$lib/p2p/relay.js';
 	import { syncWakeLock } from '$lib/p2p/wake-lock.js';
 	import { createHandoff } from '$lib/p2p/handoff.js';
 	import { canEditProgram, introduceToPeer, joinStore, joinStudioFromPeer } from '$lib/db/join.js';
@@ -86,6 +92,8 @@
 	 */
 	let shortCode = $state(false);
 	let relay = $state(false);
+	let relayAddressDraft = $state('');
+	let relayAddressBad = $state(false);
 
 	/**
 	 * Whether this device's code is off screen because it has been used.
@@ -428,6 +436,7 @@
 	onMount(() => {
 		shortCode = shortCodeEnabled();
 		relay = relayEnabled();
+		relayAddressDraft = relayAddress();
 
 		// Loaded in the browser only: this page renders on the server first, where
 		// `customElements` does not exist.
@@ -658,6 +667,31 @@
 	function chooseRelay(enabled) {
 		relay = enabled;
 		setRelayEnabled(enabled);
+	}
+
+	/**
+	 * Keep, or clear, the address of a relay somebody runs themselves.
+	 *
+	 * Empty is a valid answer and means "use the one shipped with the app", so it
+	 * is stored as such rather than rejected. Anything else has to be usable
+	 * before it is kept: an address without a peer id is one nobody can be sure
+	 * they reached, and a relay is exactly the machine to be sure about. Saying so
+	 * while the field is still in front of somebody beats a node that fails to
+	 * start on the next load with nothing to point at.
+	 *
+	 * @param {string} value
+	 */
+	function chooseRelayAddress(value) {
+		relayAddressDraft = value;
+
+		if (!value.trim()) {
+			relayAddressBad = false;
+			setRelayAddress('');
+			return;
+		}
+
+		relayAddressBad = !isUsableRelayAddress(value);
+		if (!relayAddressBad) setRelayAddress(value);
 	}
 
 	/**
@@ -1168,6 +1202,30 @@
 				<span class="mt-1 block text-xs text-muted">{m.connect_relay_hint()}</span>
 			</span>
 		</label>
+
+		{#if relay}
+			<!--
+				Only while the relay is on: an address field above a switch that is off
+				is a question nobody was asked.
+			-->
+			<label class="mt-3 block text-sm">
+				{m.connect_relay_address()}
+				<input
+					type="text"
+					data-testid="relay-address"
+					value={relayAddressDraft}
+					oninput={(event) => chooseRelayAddress(event.currentTarget.value)}
+					placeholder="/dns4/…/tcp/443/tls/ws/p2p/12D3KooW…"
+					class="mt-1 w-full rounded-control border p-2 font-mono text-xs"
+				/>
+				<span class="mt-1 block text-xs text-muted">{m.connect_relay_address_hint()}</span>
+				{#if relayAddressBad}
+					<span class="mt-1 block text-xs text-danger" data-testid="relay-address-invalid">
+						{m.connect_relay_address_invalid()}
+					</span>
+				{/if}
+			</label>
+		{/if}
 
 		{#if payload}
 			<label class="mt-4 block text-sm text-muted" for="payload">{m.connect_copy()}</label>

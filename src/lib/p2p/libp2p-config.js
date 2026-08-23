@@ -23,10 +23,21 @@
 
 import { bootstrap } from '@libp2p/bootstrap';
 import { circuitRelayTransport } from '@libp2p/circuit-relay-v2';
+import { dcutr } from '@libp2p/dcutr';
+import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 import { gossipsub } from '@libp2p/gossipsub';
 import { identify, identifyPush } from '@libp2p/identify';
 import { webSockets } from '@libp2p/websockets';
 import { webRTCQR } from '@le-space/libp2p-webrtc-qr';
+
+/**
+ * The topic peers announce themselves on.
+ *
+ * Named for this application rather than the library default: the relay is
+ * shared, and a default topic would have every project that ever used it
+ * announcing into one room.
+ */
+export const DISCOVERY_TOPIC = 'yogasuci/discovery/1.0.0';
 
 /**
  * ICE servers used while gathering candidates.
@@ -124,12 +135,19 @@ export function denyDial(address, relayOptIn, protocol = globalThis.location?.pr
  * @param {readonly string[]} [options.relayBootstrapAddrs] Relay addresses to
  *   bootstrap from. Ignored entirely unless `relayOptIn` is true, so passing
  *   them is never by itself a decision to use one.
+ * @param {readonly any[]} [options.extraTransports] Transports the caller built.
+ *   `webRTC()` arrives this way rather than being imported here, and not for
+ *   taste: it pulls in `node-datachannel`, a native module that does not exist
+ *   in node — importing it made this file unloadable there and took
+ *   libp2p-config.spec.js with it, which is the one test that guards "off means
+ *   no outbound call". A promise whose test cannot run is not a promise.
  * @returns {any} a libp2p init object
  */
 export function createLibp2pConfig({
 	getOutboundSession = () => null,
 	relayOptIn = false,
-	relayBootstrapAddrs = []
+	relayBootstrapAddrs = [],
+	extraTransports = []
 } = {}) {
 	// Both conditions, not either: an address without the choice is a relay
 	// nobody asked for, and the choice without an address is nothing to dial.
@@ -148,7 +166,17 @@ export function createLibp2pConfig({
 		// their own, and keeping them present unconditionally means switching a
 		// relay on later does not need a different node - which is what would
 		// otherwise force a restart of the whole stack mid-session.
-		transports: [webRTCQR({ getOutboundSession }), circuitRelayTransport(), webSockets()],
+		// `webRTC()` beside the QR transport, and they do different jobs: the QR one
+		// carries an offer somebody scanned, this one is dialed *through* a relayed
+		// connection so two peers can end up talking directly. Without it a circuit
+		// stays a circuit, and "the relay brokers the connection, the data flows
+		// directly" would be a sentence with nothing behind it (#94).
+		transports: [
+			webRTCQR({ getOutboundSession }),
+			...extraTransports,
+			circuitRelayTransport(),
+			webSockets()
+		],
 		connectionGater: {
 			denyDialMultiaddr: (/** @type {{ toString: () => string }} */ addr) =>
 				denyDial(String(addr), relayOptIn)
@@ -156,10 +184,29 @@ export function createLibp2pConfig({
 		// Discovery only ever from a relay that was asked for. No relay, no list,
 		// and `peerDiscovery` stays empty - which is what makes "no outbound
 		// call" true of the node rather than only of the dialog.
-		peerDiscovery: hasRelay ? [bootstrap({ list: [...relays] })] : [],
+		// Two kinds, and only with a relay. `bootstrap` is how this node reaches the
+		// relay at all; `pubsubPeerDiscovery` is how it learns about the others that
+		// did the same. The second is what makes "the studio is on, the students
+		// open the app, and they find each other" true — and it is a broadcast, so
+		// everyone on the topic learns every peer id and address (#94).
+		peerDiscovery: hasRelay
+			? [
+					bootstrap({ list: [...relays] }),
+					pubsubPeerDiscovery({
+						interval: 10_000,
+						topics: [DISCOVERY_TOPIC],
+						listenOnly: false
+					})
+				]
+			: [],
 		services: {
 			identify: identify(),
 			identifyPush: identifyPush(),
+			// Hole punching. A relayed connection is limited by design — the relay
+			// grants it a duration and a data budget — and this is what turns it into
+			// a direct one before that runs out. Present unconditionally like the
+			// transports: it acts only on connections that exist.
+			dcutr: dcutr(),
 			pubsub: gossipsub({
 				emitSelf: false,
 				allowPublishToZeroTopicPeers: true,
