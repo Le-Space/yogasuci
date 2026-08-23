@@ -171,7 +171,7 @@ export function describeOwnStudio() {
  *
  * @param {string} peerId
  */
-export async function introduceToPeer(peerId) {
+export async function introduceToPeer(peerId, { withBookings = false } = {}) {
 	const libp2p = get(libp2pStore);
 	const ownDid = get(ownDidStore);
 	if (!libp2p || !ownDid) return;
@@ -192,7 +192,15 @@ export async function introduceToPeer(peerId) {
 					return null;
 				})
 			)?.publicKey ?? '',
-		bookingsAddress: get(bookingsDbStore)?.address?.toString() ?? null
+		// Held back until this device knows the peer runs a studio it belongs to.
+		//
+		// It used to go to every connection, which was harmless while a QR
+		// handshake was the only way to get one: whoever could ask had been let
+		// into the room. Peer discovery removes that (#94), and then this would
+		// hand a student's ledger address to every peer they meet. Encrypted, that
+		// discloses the existence and the shape of somebody's bookings rather than
+		// their content — smaller than it was, and not nothing.
+		bookingsAddress: withBookings ? (get(bookingsDbStore)?.address?.toString() ?? null) : null
 	};
 
 	try {
@@ -258,6 +266,16 @@ export async function joinStudioFromPeer(peerId) {
 		// gets opened is everything joined before — which is exactly what would
 		// otherwise vanish from the screen until the next reload.
 		void openJoinedStudios();
+
+		// Now, and only now, hand over the ledger address. The first introduction
+		// deliberately withheld it: at that point this device knew nothing about the
+		// peer, and under peer discovery "connected" no longer implies "let in"
+		// (#94). Having joined, it knows the peer runs the studio it belongs to,
+		// which is the whole condition.
+		await introduceToPeer(peerId, { withBookings: true }).catch(() => {
+			// The studio simply will not see this device's requests until the next
+			// connection. Not worth failing a join over.
+		});
 
 		joinStore.set({
 			state: 'joined',

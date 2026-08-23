@@ -85,6 +85,51 @@ export async function openDocuments({ key, name, address, accessController, encr
 
 	const target = address ?? storedAddresses()[key];
 
+	// One open per database at a time, whatever asks.
+	//
+	// `orbitdb.open` caches by address and even checks that cache twice — but it
+	// writes it *after* awaiting the database it builds, so two calls that arrive
+	// together both build one and the second replaces the first. Writer and reader
+	// then hold different instances of the same database and neither sees the
+	// other's entries.
+	//
+	// Not hypothetical, and not rare either once anything opens a database from
+	// more than one place: a student now introduces itself twice — once on
+	// connecting and once after joining, which is what holds back the ledger
+	// address until there is a studio to give it to (#94) — so the studio opened
+	// that student's bookings twice. It looked like a confirmation that would not
+	// take, at a load average under two.
+	return once(`${target ?? name}`, () =>
+		openOnce({ orbitdb, key, name, target, accessController, encryption })
+	);
+}
+
+/** @type {Map<string, Promise<any>>} */
+const opening = new Map();
+
+/**
+ * @param {string} id
+ * @param {() => Promise<any>} build
+ */
+function once(id, build) {
+	const running = opening.get(id);
+	if (running) return running;
+
+	const promise = build().finally(() => opening.delete(id));
+	opening.set(id, promise);
+	return promise;
+}
+
+/**
+ * @param {object} options
+ * @param {any} options.orbitdb
+ * @param {string} options.key
+ * @param {string} options.name
+ * @param {string} [options.target]
+ * @param {any} [options.accessController]
+ * @param {any} [options.encryption]
+ */
+async function openOnce({ orbitdb, key, name, target, accessController, encryption }) {
 	const db = await orbitdb.open(target ?? name, {
 		type: 'documents',
 		create: true,
@@ -92,12 +137,8 @@ export async function openDocuments({ key, name, address, accessController, encr
 		// Only the creator may write at first. Everything else is a runtime
 		// grant, so the address stays stable as the studio grows.
 		AccessController: accessController ?? OrbitDBAccessController({ write: [orbitdb.identity.id] }),
-		// Passed through, and nothing passes it yet. Encryption cannot be switched
-		// on one database at a time: both databases that need it have more than one
-		// reader by design — a student's bookings are written by the studio too, and
-		// the studio's ledger is read by the student — so it goes live together with
-		// key sharing (#95 phase 2). The seam is here so that step does not have to
-		// reopen this function.
+		// Bookings and ticket ledgers pass one; the registry and the programme do
+		// not, because courses and prices are what a studio advertises (#95).
 		...(encryption ? { encryption } : {})
 	});
 
