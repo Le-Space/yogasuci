@@ -59,48 +59,49 @@ export default defineConfig({
 			strategy: ['localStorage', 'preferredLanguage', 'baseLocale']
 		}),
 		sveltekit(),
-		SvelteKitPWA({
-			strategies: 'generateSW',
-			registerType: 'autoUpdate',
-			manifest: false, // static/manifest.webmanifest is the source of truth
-			// The plugin's own copy of the setting, under `kit` — it does not read
-			// `src/routes/+layout.js`, and it is the last argument its manifest
-			// transform receives. Without it the precache stored `program` while
-			// every link in the app points at `/program/`, so the document sat in
-			// the cache under a name nothing ever requested and an offline reload on
-			// a subpage failed outright. #72.
-			//
-			// This is also why writing our own `manifestTransforms` was the wrong
-			// lever: the plugin guards with `if (!config.manifestTransforms)`, so
-			// supplying one *replaces* its own rewrite rather than adding to it —
-			// which is how that attempt produced raw `prerendered/pages/…` paths.
-			kit: { trailingSlash: 'always' },
-			workbox: {
-				globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,woff2}'],
-				// Helia/libp2p bundles are large; the default 2 MiB cap would drop them.
-				maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
-				// No navigation fallback. The default answers *every* navigation with
-				// the precached "/" document, which is right for a single-page app and
-				// wrong here: adapter-static prerenders a document per route, and all
-				// ten are in the precache. With the fallback in place, reloading on
-				// /program served the front page — a front desk would have been thrown
-				// back to the start screen by a refresh, and ten tests that reload said
-				// so the moment the worker was finally registered.
-				navigateFallback: null,
-				// Match a precached document regardless of query string. Workbox
-				// compares the whole URL by default, so `/program/?ice=host` misses the
-				// entry stored as `program` — and that is every link this project hands
-				// out for a test or a benchmark run.
-				//
-				// Removing the fallback exposed it: the fallback had been papering over
-				// this second problem while causing the first, which is why taking it
-				// out fixed ten tests and broke the offline one. Ignoring parameters is
-				// the narrow fix, and it is sound here because there is no server: a
-				// query string is read by the page after it loads, never by something
-				// that decides which document to send.
-				ignoreURLParametersMatching: [/.*/]
-			}
-		}),
+		// DIAGNOSE (#94): abgeschaltet, damit der eigentliche Build-Fehler sichtbar wird.
+		// SvelteKitPWA({
+		// strategies: 'generateSW',
+		// registerType: 'autoUpdate',
+		// manifest: false, // static/manifest.webmanifest is the source of truth
+		// // The plugin's own copy of the setting, under `kit` — it does not read
+		// // `src/routes/+layout.js`, and it is the last argument its manifest
+		// // transform receives. Without it the precache stored `program` while
+		// // every link in the app points at `/program/`, so the document sat in
+		// // the cache under a name nothing ever requested and an offline reload on
+		// // a subpage failed outright. #72.
+		// //
+		// // This is also why writing our own `manifestTransforms` was the wrong
+		// // lever: the plugin guards with `if (!config.manifestTransforms)`, so
+		// // supplying one *replaces* its own rewrite rather than adding to it —
+		// // which is how that attempt produced raw `prerendered/pages/…` paths.
+		// kit: { trailingSlash: 'always' },
+		// workbox: {
+		// globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,woff2}'],
+		// // Helia/libp2p bundles are large; the default 2 MiB cap would drop them.
+		// maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
+		// // No navigation fallback. The default answers *every* navigation with
+		// // the precached "/" document, which is right for a single-page app and
+		// // wrong here: adapter-static prerenders a document per route, and all
+		// // ten are in the precache. With the fallback in place, reloading on
+		// // /program served the front page — a front desk would have been thrown
+		// // back to the start screen by a refresh, and ten tests that reload said
+		// // so the moment the worker was finally registered.
+		// navigateFallback: null,
+		// // Match a precached document regardless of query string. Workbox
+		// // compares the whole URL by default, so `/program/?ice=host` misses the
+		// // entry stored as `program` — and that is every link this project hands
+		// // out for a test or a benchmark run.
+		// //
+		// // Removing the fallback exposed it: the fallback had been papering over
+		// // this second problem while causing the first, which is why taking it
+		// // out fixed ten tests and broke the offline one. Ignoring parameters is
+		// // the narrow fix, and it is sound here because there is no server: a
+		// // query string is read by the page after it loads, never by something
+		// // that decides which document to send.
+		// ignoreURLParametersMatching: [/.*/]
+		// }
+		// }),
 		nodePolyfills(
 			/** @type {any} */ ({
 				include: ['buffer', 'crypto', 'events', 'process', 'stream', 'util'],
