@@ -109,6 +109,25 @@ export default defineConfig({
 			})
 		)
 	],
+	/**
+	 * Keep the WebRTC transport out of the server bundle.
+	 *
+	 * The server bundle exists only so SvelteKit can prerender these pages, and
+	 * every route here is `ssr = false` — nothing in it ever runs this code, while
+	 * `@libp2p/webrtc` reaches `node-datachannel`, a native addon with per-platform
+	 * prebuilds that has no business being bundled for a prerender.
+	 *
+	 * Added while chasing a different failure and kept on its own merits. It was
+	 * *not* the cause of that one: the real error was that `@libp2p/webrtc` was
+	 * never declared in package.json — it happened to sit in node_modules here as
+	 * somebody else's transitive dependency, which pnpm does not make importable
+	 * and CI therefore did not have. What the build reported instead was
+	 * vite-plugin-pwa finding an empty precache, because rollup was already
+	 * tearing down and that hook spoke last (#94).
+	 */
+	ssr: {
+		external: ['@libp2p/webrtc', 'node-datachannel']
+	},
 	define: {
 		__APP_VERSION__: JSON.stringify(release),
 		__BUILD_DATE__: JSON.stringify(buildDate),

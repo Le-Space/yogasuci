@@ -23,7 +23,7 @@ import { askPeersForHistory, openDatabases, replicationErrors } from '../db/open
 import { introductionLog } from '../db/introduction-log.js';
 import { createLibp2pConfig } from './libp2p-config.js';
 import { createSignalling } from './session.js';
-import { relayEnabled } from './relay.js';
+import { relayAddresses, relayEnabled } from './relay.js';
 
 const BLOCKSTORE_NAME = 'yoga-p2p/blocks';
 const DATASTORE_NAME = 'yoga-p2p/data';
@@ -101,13 +101,22 @@ export async function startNode({ passkeyCredential = null } = {}) {
 		/** @type {{ current: any }} */
 		const signallingHolder = { current: null };
 
+		// Loaded here rather than imported by the config, because it reaches
+		// `node-datachannel` — a native module node does not have — and a static
+		// import there stops that file being unit tested at all.
+		const { webRTC } = await import('@libp2p/webrtc');
+
 		const libp2p = await createLibp2p(
 			createLibp2pConfig({
 				getOutboundSession: (peerId) => signallingHolder.current?.getOutboundSession(peerId),
 				// Read once, here, because the configuration is what a node is built
 				// from — changing the setting takes effect when the node next starts,
 				// and the screen says so rather than pretending it is live.
-				relayOptIn: relayEnabled()
+				relayOptIn: relayEnabled(),
+				// Ignored unless the switch is on, so handing them over is never by
+				// itself a decision to use one — the config says so and enforces it.
+				relayBootstrapAddrs: relayAddresses(),
+				extraTransports: [webRTC()]
 			})
 		);
 
