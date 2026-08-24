@@ -269,5 +269,7 @@ async function setUpStudio(page) {
 	await page.getByTestId('course-title-de').fill('Vinyasa Flow');
 	await page.getByTestId('course-title-en').fill('Vinyasa Flow');
 	await page.getByTestId('course-add').click();
-	await expect(page.locator('[data-course-id="course:vinyasa-mi-18"]')).toBeVisible();
+	await expect(
+		page.locator('[data-testid="course-item"][data-course-id="course:vinyasa-mi-18"]')
+	).toBeVisible();
 }

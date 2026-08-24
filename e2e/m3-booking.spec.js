@@ -28,8 +28,10 @@ test.describe('bookings', () => {
 
 		// --- Bob books a class ------------------------------------------------
 		await openProgramme(bob);
-		await expect(bob.locator('[data-course-id="course:vinyasa-mi-18"]')).toBeVisible(REPLICATED);
-		const card = bob.locator('[data-course-id="course:vinyasa-mi-18"]');
+		await expect(
+			bob.locator('[data-testid="course-item"][data-course-id="course:vinyasa-mi-18"]')
+		).toBeVisible(REPLICATED);
+		const card = bob.locator('[data-testid="course-item"][data-course-id="course:vinyasa-mi-18"]');
 		await card.getByTestId('course-book').click();
 
 		// The screen you are standing on has to answer, or nothing appears to have
@@ -84,7 +86,9 @@ test.describe('bookings', () => {
 		await connectViaPaste(alice, bob);
 		await expect(bob.getByTestId('join-status')).toHaveAttribute('data-state', 'joined', READY);
 
-		const course = bob.locator('[data-course-id="course:vinyasa-mi-18"]');
+		const course = bob.locator(
+			'[data-testid="course-item"][data-course-id="course:vinyasa-mi-18"]'
+		);
 
 		// Nobody has published a count yet, and the app says so rather than
 		// guessing zero.
@@ -157,7 +161,9 @@ test.describe('bookings', () => {
 		await bob.getByTestId('nav-bookings').click();
 		await expect(bob.getByTestId('my-bookings')).toBeVisible();
 		await openProgramme(bob);
-		await expect(bob.locator('[data-course-id="course:vinyasa-mi-18"]')).toBeVisible(REPLICATED);
+		await expect(
+			bob.locator('[data-testid="course-item"][data-course-id="course:vinyasa-mi-18"]')
+		).toBeVisible(REPLICATED);
 
 		// Walking out of the studio, modelled by ending the connection rather than by
 		// `setOffline`. That was what this test used, and it does not do what it looks
@@ -170,7 +176,10 @@ test.describe('bookings', () => {
 		await expect(bob.getByTestId('hang-up')).toHaveCount(0);
 
 		await openProgramme(bob);
-		await bob.locator('[data-course-id="course:vinyasa-mi-18"]').getByTestId('course-book').click();
+		await bob
+			.locator('[data-testid="course-item"][data-course-id="course:vinyasa-mi-18"]')
+			.getByTestId('course-book')
+			.click();
 		await bob.getByTestId('nav-bookings').click();
 
 		const booking = bob.getByTestId('my-booking').first();
@@ -242,7 +251,7 @@ test.describe('bookings', () => {
 		await expect(bob.getByTestId('sync-status')).toHaveAttribute('data-peers', '0', READY);
 
 		await openProgramme(bob);
-		const card = bob.locator('[data-course-id="course:vinyasa-mi-18"]');
+		const card = bob.locator('[data-testid="course-item"][data-course-id="course:vinyasa-mi-18"]');
 		await expect(card).toBeVisible(READY);
 		await card.getByTestId('course-book').click();
 
@@ -266,7 +275,7 @@ test.describe('bookings', () => {
 		await expect(bob.getByTestId('join-status')).toHaveAttribute('data-state', 'joined', READY);
 
 		await openProgramme(bob);
-		const card = bob.locator('[data-course-id="course:vinyasa-mi-18"]');
+		const card = bob.locator('[data-testid="course-item"][data-course-id="course:vinyasa-mi-18"]');
 		await expect(card).toBeVisible(REPLICATED);
 
 		await card.getByTestId('course-book').click();
@@ -306,14 +315,21 @@ async function setUpStudio(page, { capacity } = {}) {
 	await page.getByTestId('course-title-en').fill('Vinyasa Flow');
 	if (capacity) await page.getByTestId('course-capacity').fill(capacity);
 	await page.getByTestId('course-add').click();
-	await expect(page.locator('[data-course-id="course:vinyasa-mi-18"]')).toBeVisible();
+	await expect(
+		page.locator('[data-testid="course-item"][data-course-id="course:vinyasa-mi-18"]')
+	).toBeVisible();
 }
 
 /** @param {import('@playwright/test').Page} page */
 async function bookFirstCourse(page) {
 	await openProgramme(page);
-	await expect(page.locator('[data-course-id="course:vinyasa-mi-18"]')).toBeVisible(REPLICATED);
-	await page.locator('[data-course-id="course:vinyasa-mi-18"]').getByTestId('course-book').click();
+	await expect(
+		page.locator('[data-testid="course-item"][data-course-id="course:vinyasa-mi-18"]')
+	).toBeVisible(REPLICATED);
+	await page
+		.locator('[data-testid="course-item"][data-course-id="course:vinyasa-mi-18"]')
+		.getByTestId('course-book')
+		.click();
 
 	await page.getByTestId('nav-bookings').click();
 	await expect(page.getByTestId('my-booking')).toHaveCount(1);

@@ -107,8 +107,13 @@ test.describe('conflicts', () => {
 
 		// Bob books the class and buys a pass for it.
 		await openProgramme(bob);
-		await expect(bob.locator('[data-course-id="course:vinyasa-mi-18"]')).toBeVisible(REPLICATED);
-		await bob.locator('[data-course-id="course:vinyasa-mi-18"]').getByTestId('course-book').click();
+		await expect(
+			bob.locator('[data-testid="course-item"][data-course-id="course:vinyasa-mi-18"]')
+		).toBeVisible(REPLICATED);
+		await bob
+			.locator('[data-testid="course-item"][data-course-id="course:vinyasa-mi-18"]')
+			.getByTestId('course-book')
+			.click();
 
 		await bob.getByTestId('nav-bookings').click();
 		const booking = bob.getByTestId('my-booking').first();
@@ -221,5 +226,7 @@ async function setUpStudio(page) {
 	await page.getByTestId('course-title-de').fill('Vinyasa Flow');
 	await page.getByTestId('course-title-en').fill('Vinyasa Flow');
 	await page.getByTestId('course-add').click();
-	await expect(page.locator('[data-course-id="course:vinyasa-mi-18"]')).toBeVisible();
+	await expect(
+		page.locator('[data-testid="course-item"][data-course-id="course:vinyasa-mi-18"]')
+	).toBeVisible();
 }

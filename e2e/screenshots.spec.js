@@ -119,7 +119,9 @@ test('the screens the handbook talks about', async ({ alice, bob, carol }) => {
 	await alice.getByTestId('course-title-de').fill('Vinyasa Flow');
 	await alice.getByTestId('course-title-en').fill('Vinyasa Flow');
 	await alice.getByTestId('course-add').click();
-	await expect(alice.locator('[data-course-id="course:vinyasa-mi-18"]')).toBeVisible();
+	await expect(
+		alice.locator('[data-testid="course-item"][data-course-id="course:vinyasa-mi-18"]')
+	).toBeVisible();
 	await shoot(alice, 'programme');
 
 	// --- Connecting ---------------------------------------------------------
