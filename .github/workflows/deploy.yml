@@ -117,3 +117,46 @@ jobs:
           ALEPH_SITE_DOMAIN_CATCH_ALL_PATH: /index.html
           ALEPH_PRIVATE_KEY: ${{ secrets.ALEPH_PRIVATE_KEY }}
         run: node --input-type=module -e "import('/tmp/le-space-deployer/node_modules/@le-space/node/index.js').then((m) => m.runSiteMode())"
+
+      # The receipt, written where a person can find it.
+      #
+      # The CID was only ever in the step logs, which is no use to somebody
+      # being asked to believe that this app has no server behind it. The
+      # handbook's privacy FAQ points here: it names the commit, the CID the
+      # build produced, and gateways that are not ours, so the chain from
+      # source to what a browser actually loads can be walked by hand.
+      - name: Write the deploy receipt
+        if: always() && needs.publish.outputs.ipfs_cid != ''
+        env:
+          CID: ${{ needs.publish.outputs.ipfs_cid }}
+          CID_V0: ${{ needs.publish.outputs.ipfs_cid_v0 }}
+          DOMAIN: ${{ inputs.domain || env.DEFAULT_DOMAIN }}
+        run: |
+          {
+            echo "## Was diese Auslieferung veröffentlicht hat"
+            echo
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| Commit | \`${GITHUB_SHA}\` |"
+            echo "| CID (v1) | \`${CID}\` |"
+            echo "| CID (v0) | \`${CID_V0}\` |"
+            echo "| Domain | ${DOMAIN} |"
+            echo
+            echo "### Selbst nachprüfen"
+            echo
+            echo "Worauf die Domain zeigt:"
+            echo
+            echo '```'
+            echo "dig +short TXT _dnslink.${DOMAIN}"
+            echo '```'
+            echo
+            echo "Muss \`dnslink=/ipfs/${CID}\` ergeben."
+            echo
+            echo "Dieselbe App über die CID, ohne unsere Domain:"
+            echo
+            echo "- https://${CID}.ipfs.aleph.sh/ (gepinnt, byte-identisch)"
+            echo "- https://${CID}.ipfs.dweb.link/ (Protocol Labs; Cloudflare hängt ein unsichtbares Element an)"
+            echo
+            echo "Beides liefert dieselben Dateien wie ${DOMAIN}, weil eine CID der Hash des Inhalts ist:"
+            echo "andere Dateien wären eine andere CID."
+          } >> "$GITHUB_STEP_SUMMARY"
