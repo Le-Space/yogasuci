@@ -77,6 +77,29 @@ beigetreten ist — vorher trägt die Vorstellung sie nicht. Solange ein
 QR-Handschlag die einzige Art war, verbunden zu werden, war das gleichgültig:
 Wer fragen konnte, stand im Raum. Mit Peer-Discovery ist es das nicht mehr.
 
+**Der Relay steht allen offen, und das ist eine Entscheidung, kein Versehen**
+(#94, Phase 3). Er prüft nicht, wer eine Reservierung nimmt; jeder, der die
+Adresse kennt, bekommt eine. Zwei Folgen, die man kennen sollte:
+
+Erstens ist das Discovery-Topic eine Rundsendung. Wer den Relay einschaltet,
+kündigt seine Peer-ID und seine Adressen allen an, die dasselbe tun — nicht nur
+dem eigenen Studio. Das ist der Preis dafür, dass sich Geräte ohne QR-Code
+finden. Wer ihn nicht zahlen will, lässt den Relay aus; der QR-Weg bleibt
+vollständig und ist weiterhin die Voreinstellung.
+
+Zweitens teilt man sich die Maschine mit Fremden. Reservierungen sind
+begrenzt (zehntausend), und sie werden beim Verbindungsabbruch **nicht**
+abgeräumt — `@libp2p/circuit-relay-v2` räumt nur über den Ablauf der Haltbarkeit
+auf, und jeder Neustart eines Browsers erzeugt eine neue Peer-ID und damit eine
+neue Reservierung. Läuft die Liste voll, werden neue Reservierungen abgelehnt,
+während `/health` weiter „ok" meldet. Deshalb steht die Haltbarkeit seit
+`orbitdb-relay` v0.10.9 auf zwanzig Minuten statt zwanzig Stunden.
+
+Eine Beschränkung auf bekannte Studios wäre möglich — eine Positivliste im
+Relay —, ist aber bewusst nicht gebaut: Sie verlangt einen Weg, die Liste zu
+pflegen, und ein Studio, das seinen eigenen Relay betreibt, erreicht dasselbe
+ohne neue Mechanik.
+
 ### 1.3 Privacy: OrbitDB repliziert ganze Datenbanken — und kennt keine Leserechte
 
 Zwei getrennte Punkte, die oft vermischt werden:
