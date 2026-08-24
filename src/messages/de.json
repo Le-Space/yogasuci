@@ -153,6 +153,7 @@
 	"import_read": "Prüfen",
 	"import_refused_heading": "Nicht übernommen",
 	"import_source": "Aus: {source}",
+	"import_summary": "Einmalige Einrichtung: ein bestehendes Programm von eurer Website übernehmen.",
 	"import_title": "Programm übernehmen",
 	"import_units_label": "Einheiten",
 	"import_url_label": "Adresse eurer Website",

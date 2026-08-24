@@ -108,215 +108,235 @@
 	);
 </script>
 
-<section class="mt-6 rounded-card border border-border bg-surface p-6">
-	<h2 class="text-lg font-medium">{m.import_title()}</h2>
-	<p class="mt-1 max-w-2xl text-sm text-muted">{m.import_intro()}</p>
+<!--
+	Folded shut, and last on the page.
 
-	<h3 class="mt-5 font-medium">{m.import_prompt_heading()}</h3>
-	<p class="mt-1 max-w-2xl text-sm text-muted">{m.import_prompt_hint()}</p>
-
-	<div class="mt-3 flex flex-wrap items-end gap-3">
-		<label class="grid gap-1 text-sm text-muted">
-			{m.import_url_label()}
-			<input
-				type="url"
-				inputmode="url"
-				placeholder="https://…"
-				data-testid="import-url"
-				bind:value={siteUrl}
-				class="w-72 max-w-full rounded-control border p-2"
-			/>
-		</label>
-		<button
-			type="button"
-			data-testid="import-copy-prompt"
-			onclick={copyPrompt}
-			class="rounded-control border border-border px-4 py-2"
-		>
-			{m.import_copy_prompt()}
-		</button>
-	</div>
-
-	{#if promptCopied}
-		<p class="mt-2 text-sm text-success" data-testid="import-prompt-copied">
-			{m.import_prompt_copied()}
-		</p>
-	{/if}
-
-	<h3 class="mt-6 font-medium">{m.import_paste_heading()}</h3>
-	<label class="mt-2 block text-sm text-muted" for="setup-paste">{m.import_paste_label()}</label>
-	<textarea
-		id="setup-paste"
-		data-testid="import-paste"
-		rows="5"
-		bind:value={pasted}
-		class="mt-1 w-full rounded-control border p-2 font-mono text-xs"></textarea>
-
-	<button
-		type="button"
-		data-testid="import-review"
-		onclick={review}
-		class="mt-3 rounded-control border border-border px-4 py-2"
+	This is a setup step: a studio does it once, on the day it starts, and then
+	never again. Standing open it met somebody who came to change one price with a
+	paste field and a prompt builder — the loudest thing on the screen belonged to
+	the rarest task. `<details>` rather than a toggle in script: it keeps the
+	content in the document, so a browser's find-in-page still reaches it and
+	nothing has to be re-rendered to open it.
+-->
+<details class="mt-6 rounded-card border border-border bg-surface" data-testid="import-panel">
+	<summary
+		class="cursor-pointer list-none p-6 [&::-webkit-details-marker]:hidden"
+		data-testid="import-open"
 	>
-		{m.import_read()}
-	</button>
+		<span class="font-medium">{m.import_title()}</span>
+		<span class="mt-1 block max-w-2xl text-sm text-muted">{m.import_summary()}</span>
+	</summary>
 
-	{#if error}
-		<p class="mt-3 text-sm text-danger" role="alert" data-testid="import-error">{error}</p>
-	{/if}
+	<div class="px-6 pb-6">
+		<p class="max-w-2xl text-sm text-muted">{m.import_intro()}</p>
 
-	{#if applied > 0}
-		<p class="mt-3 text-sm text-success" data-testid="import-applied">
-			{m.import_applied({ count: String(applied) })}
-		</p>
-	{/if}
+		<h3 class="mt-5 font-medium">{m.import_prompt_heading()}</h3>
+		<p class="mt-1 max-w-2xl text-sm text-muted">{m.import_prompt_hint()}</p>
 
-	{#if plan}
-		{#if plan.source}
-			<p class="mt-4 text-sm text-faint" data-testid="import-source">
-				{m.import_source({ source: plan.source })}
+		<div class="mt-3 flex flex-wrap items-end gap-3">
+			<label class="grid gap-1 text-sm text-muted">
+				{m.import_url_label()}
+				<input
+					type="url"
+					inputmode="url"
+					placeholder="https://…"
+					data-testid="import-url"
+					bind:value={siteUrl}
+					class="w-72 max-w-full rounded-control border p-2"
+				/>
+			</label>
+			<button
+				type="button"
+				data-testid="import-copy-prompt"
+				onclick={copyPrompt}
+				class="rounded-control border border-border px-4 py-2"
+			>
+				{m.import_copy_prompt()}
+			</button>
+		</div>
+
+		{#if promptCopied}
+			<p class="mt-2 text-sm text-success" data-testid="import-prompt-copied">
+				{m.import_prompt_copied()}
 			</p>
 		{/if}
 
-		{#if total > 0}
-			<h3 class="mt-4 font-medium">{m.import_new_heading()}</h3>
-			<p class="mt-1 text-sm text-warning">{m.import_check_prices()}</p>
+		<h3 class="mt-6 font-medium">{m.import_paste_heading()}</h3>
+		<label class="mt-2 block text-sm text-muted" for="setup-paste">{m.import_paste_label()}</label>
+		<textarea
+			id="setup-paste"
+			data-testid="import-paste"
+			rows="5"
+			bind:value={pasted}
+			class="mt-1 w-full rounded-control border p-2 font-mono text-xs"></textarea>
 
-			<ul class="mt-3 grid gap-2" data-testid="import-new">
-				{#each plan.locations as entry (entry.id)}
-					<li class="rounded-control border border-border p-3" data-testid="import-row">
-						<label class="flex items-center gap-2 text-sm">
-							<input
-								type="checkbox"
-								checked={wanted(`location:${entry.id}`)}
-								onchange={() => (skipped[`location:${entry.id}`] = wanted(`location:${entry.id}`))}
-							/>
-							<span class="text-faint">{m.import_kind_location()}</span>
-							<span class="font-medium">{entry.name.de}</span>
-						</label>
-					</li>
-				{/each}
+		<button
+			type="button"
+			data-testid="import-review"
+			onclick={review}
+			class="mt-3 rounded-control border border-border px-4 py-2"
+		>
+			{m.import_read()}
+		</button>
 
-				{#each plan.packages as entry (entry.id)}
-					<li class="rounded-control border border-border p-3" data-testid="import-row">
-						<label class="flex flex-wrap items-center gap-2 text-sm">
-							<input
-								type="checkbox"
-								checked={wanted(`package:${entry.id}`)}
-								onchange={() => (skipped[`package:${entry.id}`] = wanted(`package:${entry.id}`))}
-							/>
-							<span class="text-faint">{m.import_kind_package()}</span>
-							<span class="font-medium">{entry.name.de}</span>
-						</label>
+		{#if error}
+			<p class="mt-3 text-sm text-danger" role="alert" data-testid="import-error">{error}</p>
+		{/if}
 
-						<div class="mt-2 flex flex-wrap gap-3">
-							<label class="grid gap-1 text-xs text-muted">
-								{m.import_price_label()}
+		{#if applied > 0}
+			<p class="mt-3 text-sm text-success" data-testid="import-applied">
+				{m.import_applied({ count: String(applied) })}
+			</p>
+		{/if}
+
+		{#if plan}
+			{#if plan.source}
+				<p class="mt-4 text-sm text-faint" data-testid="import-source">
+					{m.import_source({ source: plan.source })}
+				</p>
+			{/if}
+
+			{#if total > 0}
+				<h3 class="mt-4 font-medium">{m.import_new_heading()}</h3>
+				<p class="mt-1 text-sm text-warning">{m.import_check_prices()}</p>
+
+				<ul class="mt-3 grid gap-2" data-testid="import-new">
+					{#each plan.locations as entry (entry.id)}
+						<li class="rounded-control border border-border p-3" data-testid="import-row">
+							<label class="flex items-center gap-2 text-sm">
 								<input
-									type="number"
-									step="0.01"
-									min="0"
-									data-testid="import-price"
-									bind:value={entry.priceEUR}
-									class="w-28 rounded-control border p-1"
+									type="checkbox"
+									checked={wanted(`location:${entry.id}`)}
+									onchange={() =>
+										(skipped[`location:${entry.id}`] = wanted(`location:${entry.id}`))}
 								/>
+								<span class="text-faint">{m.import_kind_location()}</span>
+								<span class="font-medium">{entry.name.de}</span>
 							</label>
-							{#if entry.units !== null}
+						</li>
+					{/each}
+
+					{#each plan.packages as entry (entry.id)}
+						<li class="rounded-control border border-border p-3" data-testid="import-row">
+							<label class="flex flex-wrap items-center gap-2 text-sm">
+								<input
+									type="checkbox"
+									checked={wanted(`package:${entry.id}`)}
+									onchange={() => (skipped[`package:${entry.id}`] = wanted(`package:${entry.id}`))}
+								/>
+								<span class="text-faint">{m.import_kind_package()}</span>
+								<span class="font-medium">{entry.name.de}</span>
+							</label>
+
+							<div class="mt-2 flex flex-wrap gap-3">
 								<label class="grid gap-1 text-xs text-muted">
-									{m.import_units_label()}
+									{m.import_price_label()}
+									<input
+										type="number"
+										step="0.01"
+										min="0"
+										data-testid="import-price"
+										bind:value={entry.priceEUR}
+										class="w-28 rounded-control border p-1"
+									/>
+								</label>
+								{#if entry.units !== null}
+									<label class="grid gap-1 text-xs text-muted">
+										{m.import_units_label()}
+										<input
+											type="number"
+											min="1"
+											bind:value={entry.units}
+											class="w-20 rounded-control border p-1"
+										/>
+									</label>
+								{/if}
+								{#if entry.validityDays !== null}
+									<label class="grid gap-1 text-xs text-muted">
+										{m.import_days_label()}
+										<input
+											type="number"
+											min="1"
+											bind:value={entry.validityDays}
+											class="w-24 rounded-control border p-1"
+										/>
+									</label>
+								{/if}
+							</div>
+						</li>
+					{/each}
+
+					{#each plan.courses as entry (entry.id)}
+						<li class="rounded-control border border-border p-3" data-testid="import-row">
+							<label class="flex items-center gap-2 text-sm">
+								<input
+									type="checkbox"
+									checked={wanted(`course:${entry.id}`)}
+									onchange={() => (skipped[`course:${entry.id}`] = wanted(`course:${entry.id}`))}
+								/>
+								<span class="text-faint">{m.import_kind_course()}</span>
+								<span class="font-medium">{entry.title.de}</span>
+								<span class="text-faint">{entry.time}</span>
+							</label>
+
+							<div class="mt-2 flex flex-wrap items-end gap-3">
+								<label class="grid gap-1 text-xs text-muted">
+									{m.import_capacity_label()}
 									<input
 										type="number"
 										min="1"
-										bind:value={entry.units}
+										data-testid="import-capacity"
+										bind:value={entry.capacity}
 										class="w-20 rounded-control border p-1"
 									/>
 								</label>
-							{/if}
-							{#if entry.validityDays !== null}
-								<label class="grid gap-1 text-xs text-muted">
-									{m.import_days_label()}
-									<input
-										type="number"
-										min="1"
-										bind:value={entry.validityDays}
-										class="w-24 rounded-control border p-1"
-									/>
-								</label>
-							{/if}
-						</div>
-					</li>
-				{/each}
-
-				{#each plan.courses as entry (entry.id)}
-					<li class="rounded-control border border-border p-3" data-testid="import-row">
-						<label class="flex items-center gap-2 text-sm">
-							<input
-								type="checkbox"
-								checked={wanted(`course:${entry.id}`)}
-								onchange={() => (skipped[`course:${entry.id}`] = wanted(`course:${entry.id}`))}
-							/>
-							<span class="text-faint">{m.import_kind_course()}</span>
-							<span class="font-medium">{entry.title.de}</span>
-							<span class="text-faint">{entry.time}</span>
-						</label>
-
-						<div class="mt-2 flex flex-wrap items-end gap-3">
-							<label class="grid gap-1 text-xs text-muted">
-								{m.import_capacity_label()}
-								<input
-									type="number"
-									min="1"
-									data-testid="import-capacity"
-									bind:value={entry.capacity}
-									class="w-20 rounded-control border p-1"
-								/>
-							</label>
-							{#if entry.capacityAssumed}
-								<!-- A website publishes its timetable, not its room size. Saying
+								{#if entry.capacityAssumed}
+									<!-- A website publishes its timetable, not its room size. Saying
 								     so beats presenting a number nobody read as if it came from
 								     the page. -->
-								<span class="pb-1 text-xs text-warning" data-testid="import-capacity-assumed">
-									{m.import_capacity_assumed()}
-								</span>
-							{/if}
-						</div>
-					</li>
-				{/each}
-			</ul>
+									<span class="pb-1 text-xs text-warning" data-testid="import-capacity-assumed">
+										{m.import_capacity_assumed()}
+									</span>
+								{/if}
+							</div>
+						</li>
+					{/each}
+				</ul>
 
-			<button
-				type="button"
-				data-testid="import-apply"
-				onclick={apply}
-				class="mt-4 rounded-control bg-accent px-4 py-2 font-medium text-accent-contrast"
-			>
-				{m.import_apply()}
-			</button>
-		{:else}
-			<p class="mt-4 text-sm text-muted" data-testid="import-nothing">{m.import_nothing()}</p>
-		{/if}
+				<button
+					type="button"
+					data-testid="import-apply"
+					onclick={apply}
+					class="mt-4 rounded-control bg-accent px-4 py-2 font-medium text-accent-contrast"
+				>
+					{m.import_apply()}
+				</button>
+			{:else}
+				<p class="mt-4 text-sm text-muted" data-testid="import-nothing">{m.import_nothing()}</p>
+			{/if}
 
-		{#if plan.existing.length}
-			<h3 class="mt-6 font-medium">{m.import_existing_heading()}</h3>
-			<ul class="mt-2 grid gap-1 text-sm text-muted" data-testid="import-existing">
-				{#each plan.existing as entry (entry.kind + entry.id)}
-					<li>{entry.name}</li>
-				{/each}
-			</ul>
-		{/if}
+			{#if plan.existing.length}
+				<h3 class="mt-6 font-medium">{m.import_existing_heading()}</h3>
+				<ul class="mt-2 grid gap-1 text-sm text-muted" data-testid="import-existing">
+					{#each plan.existing as entry (entry.kind + entry.id)}
+						<li>{entry.name}</li>
+					{/each}
+				</ul>
+			{/if}
 
-		{#if plan.refused.length}
-			<!--
+			{#if plan.refused.length}
+				<!--
 				Shown as prominently as what worked. A studio that pasted its whole
 				price list needs to see which lines did not arrive, or it will believe
 				the import was complete.
 			-->
-			<h3 class="mt-6 font-medium">{m.import_refused_heading()}</h3>
-			<ul class="mt-2 grid gap-1 text-sm" data-testid="import-refused">
-				{#each plan.refused as refusal, index (index)}
-					<li><span class="font-medium">{refusal.what}</span> — {refusal.reason}</li>
-				{/each}
-			</ul>
+				<h3 class="mt-6 font-medium">{m.import_refused_heading()}</h3>
+				<ul class="mt-2 grid gap-1 text-sm" data-testid="import-refused">
+					{#each plan.refused as refusal, index (index)}
+						<li><span class="font-medium">{refusal.what}</span> — {refusal.reason}</li>
+					{/each}
+				</ul>
+			{/if}
 		{/if}
-	{/if}
-</section>
+	</div>
+</details>

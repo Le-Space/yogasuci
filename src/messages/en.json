@@ -153,6 +153,7 @@
 	"import_read": "Review",
 	"import_refused_heading": "Not taken over",
 	"import_source": "From: {source}",
+	"import_summary": "One-off setup: take an existing programme over from your website.",
 	"import_title": "Take over a programme",
 	"import_units_label": "Visits",
 	"import_url_label": "Your website address",

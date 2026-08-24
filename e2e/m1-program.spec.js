@@ -317,6 +317,13 @@ test.describe('taking a programme over from a pasted document', () => {
 		// The import lives with the programme rather than with the studio: it
 		// creates courses and passes, and that is the page those belong to.
 		await alice.goto('/program/');
+
+		// Folded shut now. A studio imports once, on its first day, so the panel
+		// does not stand open in front of everyone who came to change a price.
+		await expect(alice.getByTestId('import-panel')).toBeVisible(READY);
+		await expect(alice.getByTestId('import-paste')).not.toBeVisible();
+
+		await alice.getByTestId('import-open').click();
 		await expect(alice.getByTestId('import-paste')).toBeVisible(READY);
 
 		// Step 1: the prompt. It goes to the clipboard, carrying the studio's own

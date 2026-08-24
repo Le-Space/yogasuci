@@ -967,11 +967,20 @@
 	</div>
 
 	<!--
-		Last on the page on purpose: somebody arriving here to change one price
-		should not meet a paste field first. An import is a setup step, and setup
-		happens once.
+		Last on the page and folded shut, for a device that may write here.
+
+		An import is a setup step, and setup happens once — so somebody arriving to
+		change one price should not meet a paste field first. That much was already
+		the reason for its position; `SetupImport` now carries the folding.
+
+		The `canEdit` guard is the part that was missing. Without it a student who
+		joined this studio was offered a field that overwrites its programme —
+		refused by the access controller, so the damage was an error message rather
+		than lost data, but it is not a thing to offer somebody at all.
 	-->
-	<SetupImport />
+	{#if canEdit}
+		<SetupImport />
+	{/if}
 
 	<!--
 		The other studios this device belongs to, one under the other rather than

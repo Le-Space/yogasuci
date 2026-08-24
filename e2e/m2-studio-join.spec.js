@@ -79,6 +79,14 @@ test.describe('joining a studio', () => {
 		await expect(course).toHaveAttribute('data-location-id', 'location:altstadt');
 		await expect(course).toContainText('Studio Altstadt', REPLICATED);
 
+		// And not the import panel. It was drawn for everybody who could reach this
+		// page, so a student who had joined a studio was offered a paste field that
+		// overwrites its programme. The access controller refused those writes, so
+		// the cost was a confusing error rather than lost data — but the offer
+		// should never have been made. Asserted on the same screen as the rest,
+		// because that is where it appeared.
+		await expect(bob.getByTestId('import-panel')).toHaveCount(0);
+
 		// Bob is a guest: the editor is not his to use, and the app says so
 		// rather than letting him write into a database the ACL would refuse.
 		await expect(bob.getByTestId('guest-notice')).toBeVisible();
