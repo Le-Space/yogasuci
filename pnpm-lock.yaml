@@ -11,6 +11,12 @@ importers:
 
   .:
     dependencies:
+      '@chainsafe/libp2p-noise':
+        specifier: ^17.0.0
+        version: 17.0.0
+      '@chainsafe/libp2p-yamux':
+        specifier: ^8.0.1
+        version: 8.0.1
       '@helia/bitswap':
         specifier: ^4.0.6
         version: 4.0.7(react-native@0.86.2(@babel/core@7.29.7)(react@19.2.8))
@@ -5900,10 +5906,10 @@ snapshots:
     dependencies:
       '@chainsafe/as-chacha20poly1305': 0.1.0
       '@chainsafe/as-sha256': 1.2.4
-      '@libp2p/crypto': 5.1.21
-      '@libp2p/interface': 3.2.5
-      '@libp2p/peer-id': 6.0.13
-      '@libp2p/utils': 7.3.1
+      '@libp2p/crypto': 5.1.23
+      '@libp2p/interface': 3.3.0
+      '@libp2p/peer-id': 6.0.15
+      '@libp2p/utils': 7.4.0
       '@noble/ciphers': 2.2.0
       '@noble/curves': 2.2.0
       '@noble/hashes': 2.2.0
@@ -5914,8 +5920,8 @@ snapshots:
 
   '@chainsafe/libp2p-yamux@8.0.1':
     dependencies:
-      '@libp2p/interface': 3.2.5
-      '@libp2p/utils': 7.3.1
+      '@libp2p/interface': 3.3.0
+      '@libp2p/utils': 7.4.0
       race-signal: 2.0.0
       uint8arraylist: 2.4.9
 

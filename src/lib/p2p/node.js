@@ -123,6 +123,8 @@ export async function startNode({ passkeyCredential = null } = {}) {
 		const signalling = createSignalling(libp2p);
 		signallingHolder.current = signalling;
 
+		dialDiscoveredPeers(libp2p);
+
 		// Named for the signed-in account. Two passkeys on one device are two
 		// separate stores, so the second one cannot read blocks the first pulled
 		// down — which is the point, and also why this cannot wait for OrbitDB to
@@ -324,8 +326,30 @@ function installDiagnostics() {
 				(running?.libp2p?.getConnections() ?? []).map((/** @type {any} */ connection) => ({
 					peer: connection.remotePeer.toString(),
 					status: connection.status,
-					multiplexer: connection.multiplexer
+					multiplexer: connection.multiplexer,
+					// The address says *how* this connection is carried, and that is a
+					// different question from whether it exists. A relayed one contains
+					// `/p2p-circuit` and dies when the relay's duration limit runs out;
+					// one that hole punched contains `/webrtc` and does not. A test that
+					// only counts connections passes on either, including on a circuit
+					// that is seconds from ending (#94).
+					address: connection.remoteAddr?.toString() ?? '',
+					// Circuit relay v2 marks a connection it is bounding. Read from the
+					// connection rather than inferred from the address, because that is
+					// what libp2p itself acts on.
+					limited: Boolean(connection.limits)
 				})),
+			/**
+			 * The addresses this node believes it can be reached at.
+			 *
+			 * Empty is the normal state without a relay: a QR session is dialed by
+			 * the application, never out of the blue. With a relay it should hold a
+			 * `/p2p-circuit` address, and that is the difference between having a
+			 * connection *to* the relay and being reachable *through* it — which is
+			 * what peer discovery has to announce (#94).
+			 */
+			addresses: () =>
+				(running?.libp2p?.getMultiaddrs?.() ?? []).map((/** @type {any} */ a) => a.toString()),
 			/** Topics this node has subscribed to — one per open database. */
 			topics: () => running?.libp2p?.services?.pubsub?.getTopics?.() ?? [],
 			/** Who this node believes is listening on a topic. */
@@ -528,4 +552,40 @@ function trackConnections(libp2p) {
 	});
 
 	update();
+}
+
+/**
+ * Connect to peers that discovery turned up.
+ *
+ * libp2p 3 announces `peer:discovery` and does nothing else with it — the
+ * connection manager only reconnects to peers it already knew. So discovery on
+ * its own produces a node that has heard of somebody and never speaks to them,
+ * which is exactly what the first relay test found: both browsers reached the
+ * relay, both announced themselves, both saw the announcements, and neither
+ * dialled (#94).
+ *
+ * Only ever peers a relay turned up, because without one `peerDiscovery` is
+ * empty and this never fires. A QR session is still dialed by the application.
+ *
+ * @param {any} libp2p
+ */
+function dialDiscoveredPeers(libp2p) {
+	libp2p.addEventListener('peer:discovery', (/** @type {any} */ event) => {
+		const peer = event.detail?.id;
+		if (!peer) return;
+
+		// Already talking, or talking to ourselves. Both happen: discovery repeats
+		// on an interval, so most announcements are about somebody already here.
+		const id = peer.toString();
+		if (id === libp2p.peerId.toString()) return;
+		if (libp2p.getConnections(peer).length > 0) return;
+
+		libp2p.dial(peer).catch((/** @type {any} */ error) => {
+			// Ordinary rather than exceptional: an announcement can describe a device
+			// that has since gone, or a path this network cannot take. Recorded once
+			// per attempt so a relay that turns up nothing reachable is visible, and
+			// not thrown, because there is nobody to tell and nothing to undo.
+			console.debug(`Could not dial a discovered peer (${id.slice(-8)}):`, error?.message ?? error);
+		});
+	});
 }
