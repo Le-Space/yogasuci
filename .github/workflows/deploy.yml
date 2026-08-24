@@ -152,10 +152,10 @@ jobs:
             echo
             echo "Muss \`dnslink=/ipfs/${CID}\` ergeben."
             echo
-            echo "Dieselbe App über ein Gateway, das uns nicht gehört:"
+            echo "Dieselbe App über die CID, ohne unsere Domain:"
             echo
-            echo "- https://${CID}.ipfs.dweb.link/"
-            echo "- https://${CID}.ipfs.cf-ipfs.com/"
+            echo "- https://${CID}.ipfs.aleph.sh/ (gepinnt, byte-identisch)"
+            echo "- https://${CID}.ipfs.dweb.link/ (Protocol Labs; Cloudflare hängt ein unsichtbares Element an)"
             echo
             echo "Beides liefert dieselben Dateien wie ${DOMAIN}, weil eine CID der Hash des Inhalts ist:"
             echo "andere Dateien wären eine andere CID."

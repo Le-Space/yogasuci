@@ -77,14 +77,24 @@ on flight mode. It keeps working — courses, bookings, passes. An app that kept
 its data at a provider would be empty at this point.
 
 **Second: fetch the same app from somewhere else.** Every release gets a
-**CID** — a checksum of its entire content. The same CID through a gateway that
-is not ours:
+**CID** — a checksum of its entire content. That CID gives you the same app with
+no involvement from our domain:
 
-- [dweb.link](https://bafybeicvgquga6sy273jm76fnmrs3oqjpmqdyifeuk7ilpjxadt3sv6bji.ipfs.dweb.link/)
-  (run by Protocol Labs)
+- [through the Aleph gateway](https://bafybeicvgquga6sy273jm76fnmrs3oqjpmqdyifeuk7ilpjxadt3sv6bji.ipfs.aleph.sh/)
+  — where the app is pinned, and which serves byte for byte what
+  `yogasuci.le-space.de` serves
+- [through dweb.link](https://bafybeicvgquga6sy273jm76fnmrs3oqjpmqdyifeuk7ilpjxadt3sv6bji.ipfs.dweb.link/)
+  — run by Protocol Labs, who have never heard of us
 
-If the same app appears there, it cannot depend on a server of ours — that
-gateway has never heard of us.
+If the app appears on a gateway that is not ours, it cannot depend on a machine
+of ours.
+
+One detail says more about gateways than any explanation: `dweb.link` sits
+behind Cloudflare, and Cloudflare injects an invisible element
+(`cdn-cgi/content`) into the page it hands you, which is not in the original.
+The app works unchanged — but the difference shows what a gateway is: a
+middleman who can touch the content. That is why the next section is not a
+gimmick.
 
 **Third: ask the domain what it points at.**
 
@@ -140,10 +150,17 @@ extension that works with an IPFS node running on your own machine. With both
 installed, the browser fetches the app **past the gateway**, straight from the
 network.
 
-That removes the last intermediary: not even the public gateway then sees that
-somebody loaded this app. Everyday use does not need it — but for the question
-"does this really run without a server?", it is the clearest answer you can
-produce yourself.
+That removes the last intermediary, in both directions. Not even the public
+gateway then sees that somebody loaded this app — and, more to the point, your
+own node **recomputes the checksum itself**. It accepts the files only if they
+add up to the CID that was asked for.
+
+That is the difference from the paragraph above. A gateway can add something,
+as Cloudflare does. A local node cannot be handed that: a changed byte is a
+different CID, and it refuses it. Everyday use does not need this — but for the
+question "does this really run without a server, and am I really getting what
+was published?", it is the only answer that does not depend on anyone's
+goodwill.
 
 A fuller introduction to the approach is in the
 [Local-First FAQ](https://local-first.le-space.de/#faq).

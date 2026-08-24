@@ -80,14 +80,24 @@ und schaltet dann Flugmodus ein. Sie läuft weiter — Kurse, Buchungen, Karten.
 Eine App, die ihre Daten bei einem Anbieter hätte, wäre an dieser Stelle leer.
 
 **Zweitens: holt dieselbe App woanders her.** Jede Auslieferung bekommt eine
-**CID** — eine Prüfsumme des gesamten Inhalts. Dieselbe CID über ein Gateway,
-das uns nicht gehört:
+**CID** — eine Prüfsumme des gesamten Inhalts. Über dieselbe CID kommt dieselbe
+App, ganz ohne unsere Domain:
 
-- [dweb.link](https://bafybeicvgquga6sy273jm76fnmrs3oqjpmqdyifeuk7ilpjxadt3sv6bji.ipfs.dweb.link/)
-  (betrieben von Protocol Labs)
+- [über das Aleph-Gateway](https://bafybeicvgquga6sy273jm76fnmrs3oqjpmqdyifeuk7ilpjxadt3sv6bji.ipfs.aleph.sh/)
+  — dort liegt die App gepinnt, und dieses Gateway liefert Byte für Byte
+  dasselbe aus wie `yogasuci.le-space.de`
+- [über dweb.link](https://bafybeicvgquga6sy273jm76fnmrs3oqjpmqdyifeuk7ilpjxadt3sv6bji.ipfs.dweb.link/)
+  — betrieben von Protocol Labs, also von jemandem, der uns nicht kennt
 
-Wenn dort dieselbe App erscheint, kann sie nicht von einem Server von uns
-abhängen — dieses Gateway kennt uns nicht.
+Erscheint die App auf einem fremden Gateway, kann sie nicht von einem Rechner
+von uns abhängen.
+
+Ein Detail, das mehr über Gateways verrät als jede Erklärung: `dweb.link` läuft
+hinter Cloudflare, und Cloudflare hängt in die ausgelieferte Seite ein
+unsichtbares Element (`cdn-cgi/content`), das im Original nicht steht. Die App
+funktioniert unverändert — aber der Unterschied zeigt, was ein Gateway ist: ein
+Mittelsmann, der den Inhalt anfassen kann. Deshalb ist der nächste Abschnitt
+keine Spielerei.
 
 **Drittens: fragt die Domain, worauf sie zeigt.**
 
@@ -145,10 +155,17 @@ Browser-Erweiterung, die mit einem eigenen IPFS-Knoten auf eurem Rechner
 zusammenarbeitet. Ist beides installiert, holt der Browser die App **am Gateway
 vorbei** direkt aus dem Netz.
 
-Damit fällt der letzte Vermittler weg: Nicht einmal das öffentliche Gateway
-sieht dann noch, dass jemand diese App geladen hat. Für den Alltag braucht es
-das nicht — für die Frage „läuft das wirklich ohne Server?" ist es die
-deutlichste Antwort, die man selbst herstellen kann.
+Damit fällt der letzte Vermittler weg, und zwar in beide Richtungen. Nicht
+einmal das öffentliche Gateway sieht dann noch, dass jemand diese App geladen
+hat — und, wichtiger: Euer eigener Knoten **rechnet die Prüfsumme selbst nach**.
+Er nimmt die Dateien nur an, wenn sie die angeforderte CID ergeben.
+
+Das ist der Unterschied zum Absatz weiter oben. Ein Gateway kann etwas
+hinzufügen, wie Cloudflare es tut. Einem lokalen Knoten kann man das nicht
+unterschieben: Ein verändertes Byte ist eine andere CID, und die weist er
+zurück. Für den Alltag braucht es das nicht — für die Frage „läuft das wirklich
+ohne Server, und kriege ich wirklich das, was veröffentlicht wurde?" ist es die
+einzige Antwort, die niemandes Wohlwollen voraussetzt.
 
 Eine ausführlichere Einführung zu diesem Ansatz steht in der
 [FAQ zu Local-First](https://local-first.le-space.de/#faq).
