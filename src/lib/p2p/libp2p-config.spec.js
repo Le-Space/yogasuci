@@ -47,7 +47,12 @@ describe('a node somebody did ask', () => {
 		// relay is for (#94).
 		const config = createLibp2pConfig({ relayOptIn: true, relayBootstrapAddrs: [RELAY] });
 
-		expect(config.addresses.listen).toEqual(['/p2p-circuit']);
+		// Both, and the second is not decoration: `/p2p-circuit` says "reachable
+		// through a relay", `/webrtc` says "and then dial me here instead". Without
+		// it a relayed connection stays relayed and ends with the relay's duration
+		// limit — measured as a circuit that vanished after twelve seconds before
+		// this was added (#94).
+		expect(config.addresses.listen).toEqual(['/p2p-circuit', '/webrtc']);
 		expect(config.peerDiscovery).toHaveLength(2);
 	});
 

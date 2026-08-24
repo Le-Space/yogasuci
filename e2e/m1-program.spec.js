@@ -87,7 +87,9 @@ test.describe('registry and programme', () => {
 
 		await alice.getByTestId('course-add').click();
 
-		const series = alice.locator('[data-course-id="course:anfaenger-h26"]');
+		const series = alice.locator(
+			'[data-testid="course-item"][data-course-id="course:anfaenger-h26"]'
+		);
 		await expect(series).toBeVisible();
 		await expect(series).toHaveAttribute('data-sessions', '9');
 		await expect(series).toHaveAttribute('data-mode', 'series');
@@ -109,10 +111,9 @@ test.describe('registry and programme', () => {
 
 		await expect(alice.getByTestId('course-item')).toHaveCount(4);
 		await expect(alice.getByTestId('package-item')).toHaveCount(5);
-		await expect(alice.locator('[data-course-id="course:anfaenger-h26"]')).toHaveAttribute(
-			'data-sessions',
-			'9'
-		);
+		await expect(
+			alice.locator('[data-testid="course-item"][data-course-id="course:anfaenger-h26"]')
+		).toHaveAttribute('data-sessions', '9');
 
 		await alice.goto('/studio/');
 		await expect(alice.getByTestId('studio-ready')).toBeVisible(READY);
@@ -277,7 +278,9 @@ async function addRecurringCourse(page, { id, location, de, en, weekday }) {
 	await page.getByTestId('course-weekday').selectOption(weekday);
 	await page.getByTestId('course-add').click();
 
-	await expect(page.locator(`[data-course-id="course:${id}"]`)).toBeVisible();
+	await expect(
+		page.locator(`[data-testid="course-item"][data-course-id="course:${id}"]`)
+	).toBeVisible();
 }
 
 /**

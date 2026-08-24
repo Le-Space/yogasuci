@@ -155,7 +155,9 @@ test.describe('a front desk with more than one device on it', () => {
 
 		for (const leaf of leaves) {
 			await openProgramme(leaf);
-			await expect(leaf.locator('[data-course-id="course:yin-fr-19"]')).toBeVisible(REPLICATED);
+			await expect(
+				leaf.locator('[data-testid="course-item"][data-course-id="course:yin-fr-19"]')
+			).toBeVisible(REPLICATED);
 		}
 
 		// --- and the right one leaves ------------------------------------------
@@ -211,5 +213,7 @@ async function addCourse(page, id, title) {
 	await page.getByTestId('course-title-en').fill(title);
 	await page.getByTestId('course-add').click();
 
-	await expect(page.locator(`[data-course-id="course:${id}"]`)).toBeVisible();
+	await expect(
+		page.locator(`[data-testid="course-item"][data-course-id="course:${id}"]`)
+	).toBeVisible();
 }

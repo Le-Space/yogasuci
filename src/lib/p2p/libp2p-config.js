@@ -22,6 +22,8 @@
 // runs entirely inside the direct WebRTC connection the QR handshake built.
 
 import { bootstrap } from '@libp2p/bootstrap';
+import { noise } from '@chainsafe/libp2p-noise';
+import { yamux } from '@chainsafe/libp2p-yamux';
 import { circuitRelayTransport } from '@libp2p/circuit-relay-v2';
 import { dcutr } from '@libp2p/dcutr';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
@@ -160,7 +162,17 @@ export function createLibp2pConfig({
 			// without one is an address nobody can use. Without a relay this node
 			// is never dialable out of the blue: a session is built by the
 			// application first, then dialed.
-			listen: hasRelay ? ['/p2p-circuit'] : []
+			// `/p2p-circuit` says "reachable through a relay". `/webrtc` says
+			// "and once you have reached me that way, dial me here instead" — it is
+			// what lets two browsers end up talking directly, since neither can
+			// listen on a socket and classic hole punching therefore never applies
+			// to them.
+			//
+			// Without the second, a relayed connection stays a relayed connection and
+			// dies when the relay's duration limit runs out: measured as a circuit
+			// that vanished the moment the test relay's grant expired — twelve
+			// seconds when this was measured, twenty minutes on the real one (#94).
+			listen: hasRelay ? ['/p2p-circuit', '/webrtc'] : []
 		},
 		// The transports are capability rather than usage. They dial nothing on
 		// their own, and keeping them present unconditionally means switching a
@@ -177,6 +189,14 @@ export function createLibp2pConfig({
 			circuitRelayTransport(),
 			webSockets()
 		],
+		// Needed by every transport except the QR one, which brings its own: a
+		// WebSocket to a relay, and the circuit through it, are ordinary libp2p
+		// connections and libp2p 3 ships no defaults for these. Without them the
+		// dial fails with "At least one protocol must be specified" and the node
+		// simply never reaches the relay — no error on any screen, no connection,
+		// nothing to point at (#94).
+		connectionEncrypters: [noise()],
+		streamMuxers: [yamux()],
 		connectionGater: {
 			denyDialMultiaddr: (/** @type {{ toString: () => string }} */ addr) =>
 				denyDial(String(addr), relayOptIn)

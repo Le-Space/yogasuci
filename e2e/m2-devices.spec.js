@@ -97,7 +97,9 @@ test.describe('device onboarding', () => {
 		// her copy is where a grant that did not exist would refuse it.
 		await expect(carol.getByTestId('program-error')).toHaveCount(0);
 		await openProgramme(alice);
-		await expect(alice.locator('[data-course-id="course:vinyasa-mi-18"]')).toBeVisible(REPLICATED);
+		await expect(
+			alice.locator('[data-testid="course-item"][data-course-id="course:vinyasa-mi-18"]')
+		).toBeVisible(REPLICATED);
 
 		// --- Revocation -------------------------------------------------------
 		await alice.getByTestId('nav-studio').click();
@@ -115,7 +117,9 @@ test.describe('device onboarding', () => {
 		await expect(registered).toBeVisible();
 
 		await openProgramme(alice);
-		await expect(alice.locator('[data-course-id="course:vinyasa-mi-18"]')).toHaveCount(1);
+		await expect(
+			alice.locator('[data-testid="course-item"][data-course-id="course:vinyasa-mi-18"]')
+		).toHaveCount(1);
 	});
 
 	test('the studio starts with only the owner’s own device', async ({ alice }) => {

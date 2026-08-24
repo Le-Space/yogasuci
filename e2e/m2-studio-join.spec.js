@@ -72,7 +72,9 @@ test.describe('joining a studio', () => {
 		// One row, two databases. The course comes from the programme; the words
 		// "Studio Altstadt" come from the registry, because the course itself only
 		// carries `location:altstadt`. So the name appearing is the registry arriving.
-		const course = bob.locator('[data-course-id="course:vinyasa-mi-18"]');
+		const course = bob.locator(
+			'[data-testid="course-item"][data-course-id="course:vinyasa-mi-18"]'
+		);
 		await expect(course).toBeVisible(REPLICATED);
 		await expect(course).toHaveAttribute('data-location-id', 'location:altstadt');
 		await expect(course).toContainText('Studio Altstadt', REPLICATED);
@@ -109,7 +111,9 @@ test.describe('joining a studio', () => {
 		await addCourse(alice, 'yin-fr-19', 'Yin Yoga');
 
 		await openProgramme(bob);
-		await expect(bob.locator('[data-course-id="course:yin-fr-19"]')).toBeVisible(REPLICATED);
+		await expect(
+			bob.locator('[data-testid="course-item"][data-course-id="course:yin-fr-19"]')
+		).toBeVisible(REPLICATED);
 	});
 
 	test('a device that offers no studio is refused politely', async ({ bob, carol }) => {
@@ -263,5 +267,7 @@ async function addCourse(page, id, title) {
 	await page.getByTestId('course-title-en').fill(title);
 	await page.getByTestId('course-add').click();
 
-	await expect(page.locator(`[data-course-id="course:${id}"]`)).toBeVisible();
+	await expect(
+		page.locator(`[data-testid="course-item"][data-course-id="course:${id}"]`)
+	).toBeVisible();
 }

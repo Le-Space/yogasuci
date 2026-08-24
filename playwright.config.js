@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+import { RELAY_PORT } from './e2e/relay/server.mjs';
+
 const PORT = 4183;
 
 export default defineConfig({
@@ -19,17 +21,36 @@ export default defineConfig({
 	// One constant rather than three literals: the command, the readiness probe
 	// and the baseURL have to agree, and the way that breaks is a suite that waits
 	// four minutes for a server already listening somewhere else.
-	webServer: {
-		command: `pnpm run build && pnpm exec vite preview --port ${PORT} --strictPort`,
-		port: PORT,
-		// Never reuse, not even locally. A server left running from an earlier run
-		// serves the bundle it was built from, so a local run can silently test
-		// code that no longer exists — which cost several debugging rounds where
-		// a fix appeared not to work because it was never in the bundle.
-		// Rebuilding costs ~20s; being wrong about what is under test costs more.
-		reuseExistingServer: false,
-		timeout: 240_000
-	},
+	// Two servers: the app, and a relay of the suite's own.
+	//
+	// The relay is here rather than in a fixture because it has to exist before
+	// any browser starts — a device reads its relay setting when the node is
+	// built, and there is no second chance inside a test. Its limits are tiny on
+	// purpose (see e2e/relay/server.mjs): the point of phase 4 is to assert that a
+	// connection outlives the relay's own limit, and against a real relay that
+	// would mean waiting twenty minutes (#94).
+	webServer: [
+		{
+			command: 'node e2e/relay/server.mjs',
+			env: { RELAY_TRACE: process.env.RELAY_TRACE ?? '' },
+			// Sonst verschluckt Playwright die Ausgabe des Servers.
+			stdout: 'pipe',
+			port: RELAY_PORT,
+			reuseExistingServer: false,
+			timeout: 30_000
+		},
+		{
+			command: `pnpm run build && pnpm exec vite preview --port ${PORT} --strictPort`,
+			port: PORT,
+			// Never reuse, not even locally. A server left running from an earlier run
+			// serves the bundle it was built from, so a local run can silently test
+			// code that no longer exists — which cost several debugging rounds where
+			// a fix appeared not to work because it was never in the bundle.
+			// Rebuilding costs ~20s; being wrong about what is under test costs more.
+			reuseExistingServer: false,
+			timeout: 240_000
+		}
+	],
 	use: {
 		baseURL: `http://localhost:${PORT}`,
 		screenshot: 'only-on-failure',
