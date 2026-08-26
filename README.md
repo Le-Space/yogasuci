@@ -12,9 +12,16 @@ After that they replicate directly over WebRTC.
 
 A relay exists for the case a carried code cannot bridge — two devices on
 different mobile networks, where neither can reach the other. It is off by
-default, it is never contacted unless it is switched on, and switching it on
-introduces the two devices to each other: the passes and the check-ins still go
-directly between them, not through it.
+default and never contacted unless it is switched on.
+
+What it does when it is on, stated accurately: it introduces the two devices to
+each other, and it carries their traffic until they manage a direct path. That
+second half is easy to get wrong — the two do hole punch onto a direct
+connection, but replication starts before that happens and rides the relayed
+circuit in the meantime, measured in #94. So the relay learns that two devices
+want each other and sees their IP addresses; it does not learn what they
+exchange, which stays encrypted between them. The full account is in
+[`docs/LIMITS.md`](docs/LIMITS.md) §1.3a.
 
 > **Status:** M1–M5 are implemented — registry, programme editor, bookings, cash
 > sales, check-in with the courier roundtrip, fork alarm, export and recovery,
