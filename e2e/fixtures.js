@@ -364,6 +364,23 @@ export async function connectViaCamera(offerer, who = 'scanner') {
 	// the same handler a pasted one would.
 	await answerer.getByTestId('scan-qr').click();
 
+	// Wait for the scan to be *accepted*, not merely for the payload to change.
+	//
+	// `readPayload` waits for a value different from the one captured above, and
+	// the reply is not the only thing that can produce one: this device is showing
+	// an invitation of its own, and an invitation renews. Read too early and the
+	// helper hands back a renewed *invitation* where the caller asked for a
+	// *reply*, the offering device is given something it cannot answer, and the
+	// failure surfaces two steps later as "connection-status never reached
+	// connected" — with nothing on screen to say a scan had been missed.
+	//
+	// Found by adding this as a temporary probe while diagnosing exactly that
+	// symptom: the probe made the test pass, which is what named the race.
+	await expect(
+		answerer.getByTestId('scan-accepted'),
+		'the scan produced no reply — the code was not read'
+	).toBeVisible({ timeout: 60_000 });
+
 	const answer = await readPayload(answerer, { changedFrom: previousAnswer });
 
 	await openAdvanced(offerer);
