@@ -1,0 +1,19 @@
+# Where pnpm 10 and 11 both look.
+#
+# These settings used to live in the `pnpm` field of package.json, which pnpm
+# no longer reads: it warns "The following keys were ignored" and carries on
+# without them. That is the dangerous shape of failure — the overrides silently
+# stop applying rather than the install refusing to run.
+#
+# Currently harmless, which is why it went unnoticed: the override below pins a
+# version the direct dependency already asks for, so nothing moved. It would
+# matter the moment they diverge, and `onlyBuiltDependencies` matters sooner —
+# a machine on pnpm 11 hits ERR_PNPM_IGNORED_BUILDS without it.
+#
+# Kept in git, unlike the copy that used to exist untracked here. That one was
+# lost with a reboot, and nothing said so until an install behaved differently.
+overrides:
+  '@le-space/orbitdb-identity-provider-webauthn-did': 0.5.1
+
+onlyBuiltDependencies:
+  - esbuild
