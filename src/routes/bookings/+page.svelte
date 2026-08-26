@@ -20,6 +20,7 @@
 	import { foldLedger } from '$lib/db/ledger-view.js';
 	import { ticketEventsStore } from '$lib/db/tickets.js';
 	import { coursesStore, localized } from '$lib/db/program.js';
+	import { bookingEndsOn, isPastBooking } from '$lib/program/booking-time.js';
 	import { hasFreePlace, syncOccupancy } from '$lib/db/occupancy.js';
 	import { studentBookingsStore as allStudentBookings } from '$lib/db/bookings.js';
 	import { devicesStore } from '$lib/db/registry.js';
@@ -89,6 +90,53 @@
 		const course = $coursesStore.find((entry) => entry._id === courseId);
 		return course ? localized(course.title, getLocale()) : courseId;
 	}
+
+	/**
+	 * Past or coming up.
+	 *
+	 * A booking list grows in one direction only, and after a season the thing
+	 * somebody actually came for — "what have I got next week" — is at the bottom
+	 * under everything they have already attended. So the two are separated, and
+	 * the one you are more likely to want is the one that opens.
+	 *
+	 * The decision itself is in `$lib/program/booking-time.js`, tested there: a
+	 * class today counts as coming up, and a booking whose end cannot be
+	 * established stays under "coming up" rather than disappearing into the past.
+	 */
+	const TABS = /** @type {const} */ (['upcoming', 'past']);
+	const TAB_LABEL = { upcoming: m.bookings_upcoming, past: m.bookings_past };
+	let tab = $state('upcoming');
+
+	/** @param {string} courseId */
+	function courseOf(courseId) {
+		return $coursesStore.find((entry) => entry._id === courseId) ?? null;
+	}
+
+	/**
+	 * `9999` rather than dropping them: a booking for a whole series has no single
+	 * date, and it belongs after the classes that do — those are the ones with
+	 * somewhere to be.
+	 *
+	 * @param {any} booking
+	 */
+	function sortKey(booking) {
+		return bookingEndsOn(booking, courseOf(booking.courseId)) ?? '9999-99-99';
+	}
+
+	let today = $derived(new Date().toISOString().slice(0, 10));
+
+	let upcoming = $derived(
+		$bookingsStore
+			.filter((booking) => !isPastBooking(booking, courseOf(booking.courseId), today))
+			.sort((a, b) => sortKey(a).localeCompare(sortKey(b)))
+	);
+
+	/** Newest first: the class you just came from is the one you might question. */
+	let past = $derived(
+		$bookingsStore
+			.filter((booking) => isPastBooking(booking, courseOf(booking.courseId), today))
+			.sort((a, b) => sortKey(b).localeCompare(sortKey(a)))
+	);
 
 	/** Every request from every student this device has seen, newest first. */
 	let incoming = $derived(
@@ -233,50 +281,135 @@
 	<section class="mt-6 rounded-card border border-border bg-surface p-6">
 		<h2 class="eyebrow">{m.bookings_mine()}</h2>
 
-		<ul class="mt-3 grid gap-2" data-testid="my-bookings">
-			{#each $bookingsStore as booking (booking._id)}
-				<li
-					class="flex flex-wrap items-baseline gap-3 border-b border-border pb-2"
-					data-testid="my-booking"
-					data-booking-id={booking._id}
-					data-status={booking.status}
-					data-course-id={booking.courseId}
-					data-date={booking.date ?? ''}
+		<!--
+			Both panels stay in the document with `hidden` on the inactive one rather
+			than being swapped with an {#if}, for the reason the programme tabs give:
+			`aria-controls` has to point at an element that exists, or axe fails the
+			page on an invalid reference.
+		-->
+		<div class="mt-3 flex gap-1 border-b border-border" role="tablist" data-testid="bookings-tabs">
+			{#each TABS as name (name)}
+				<button
+					type="button"
+					role="tab"
+					id="booking-tab-{name}"
+					aria-selected={tab === name}
+					aria-controls="booking-panel-{name}"
+					data-testid="tab-{name}"
+					onclick={() => (tab = name)}
+					class="rounded-t-control px-4 py-2 text-sm font-medium {tab === name
+						? 'border-b-2 border-accent text-text'
+						: 'text-muted'}"
 				>
-					<span class="flex-1">
-						{courseTitle(booking.courseId)}
-						<span class="text-faint">· {booking.date ?? m.booking_series_whole()}</span>
-					</span>
-
-					<span class={STATUS_TONE[booking.status]} data-testid="my-booking-status">
-						{STATUS_LABEL[booking.status]()}
-					</span>
-
-					<!--
-						"Requested" is a local fact until the studio has seen it. Saying so
-						is the whole difference between this and a server-backed app, where
-						a request either reached the server or visibly failed.
-					-->
-					{#if booking.status === 'requested'}
-						<span class="w-full text-xs text-faint" data-testid="my-booking-pending">
-							{m.booking_local_only()}
-						</span>
-					{/if}
-
-					{#if booking.status === 'requested' || booking.status === 'confirmed'}
-						<button
-							type="button"
-							data-testid="booking-cancel"
-							onclick={() => run(() => cancelBooking(booking._id))}
-							class="rounded-control border border-border px-3 py-1 text-sm"
-						>
-							{m.booking_cancel()}
-						</button>
-					{/if}
-				</li>
-			{:else}
-				<li class="text-faint" data-testid="my-bookings-empty">{m.bookings_mine_none()}</li>
+					{TAB_LABEL[name]()}
+				</button>
 			{/each}
-		</ul>
+		</div>
+
+		<div
+			id="booking-panel-upcoming"
+			role="tabpanel"
+			aria-labelledby="booking-tab-upcoming"
+			hidden={tab !== 'upcoming'}
+		>
+			<ul class="mt-3 grid gap-2" data-testid="my-bookings">
+				{#each upcoming as booking (booking._id)}
+					<li
+						class="flex flex-wrap items-baseline gap-3 border-b border-border pb-2"
+						data-testid="my-booking"
+						data-booking-id={booking._id}
+						data-status={booking.status}
+						data-course-id={booking.courseId}
+						data-date={booking.date ?? ''}
+					>
+						<span class="flex-1">
+							{courseTitle(booking.courseId)}
+							<span class="text-faint">· {booking.date ?? m.booking_series_whole()}</span>
+						</span>
+
+						<span class={STATUS_TONE[booking.status]} data-testid="my-booking-status">
+							{STATUS_LABEL[booking.status]()}
+						</span>
+
+						<!--
+							"Requested" is a local fact until the studio has seen it. Saying so
+							is the whole difference between this and a server-backed app, where
+							a request either reached the server or visibly failed.
+						-->
+						{#if booking.status === 'requested'}
+							<span class="w-full text-xs text-faint" data-testid="my-booking-pending">
+								{m.booking_local_only()}
+							</span>
+						{/if}
+
+						{#if booking.status === 'requested' || booking.status === 'confirmed'}
+							<button
+								type="button"
+								data-testid="booking-cancel"
+								onclick={() => run(() => cancelBooking(booking._id))}
+								class="rounded-control border border-border px-3 py-1 text-sm"
+							>
+								{m.booking_cancel()}
+							</button>
+						{/if}
+					</li>
+				{:else}
+					<li class="text-faint" data-testid="my-bookings-empty">{m.bookings_upcoming_none()}</li>
+				{/each}
+			</ul>
+		</div>
+
+		<div
+			id="booking-panel-past"
+			role="tabpanel"
+			aria-labelledby="booking-tab-past"
+			hidden={tab !== 'past'}
+		>
+			<ul class="mt-3 grid gap-2" data-testid="my-bookings-past">
+				{#each past as booking (booking._id)}
+					<li
+						class="flex flex-wrap items-baseline gap-3 border-b border-border pb-2"
+						data-testid="my-booking"
+						data-booking-id={booking._id}
+						data-status={booking.status}
+						data-course-id={booking.courseId}
+						data-date={booking.date ?? ''}
+					>
+						<span class="flex-1">
+							{courseTitle(booking.courseId)}
+							<span class="text-faint">· {booking.date ?? m.booking_series_whole()}</span>
+						</span>
+
+						<span class={STATUS_TONE[booking.status]} data-testid="my-booking-status">
+							{STATUS_LABEL[booking.status]()}
+						</span>
+
+						<!--
+							"Requested" is a local fact until the studio has seen it. Saying so
+							is the whole difference between this and a server-backed app, where
+							a request either reached the server or visibly failed.
+						-->
+						{#if booking.status === 'requested'}
+							<span class="w-full text-xs text-faint" data-testid="my-booking-pending">
+								{m.booking_local_only()}
+							</span>
+						{/if}
+
+						{#if booking.status === 'requested' || booking.status === 'confirmed'}
+							<button
+								type="button"
+								data-testid="booking-cancel"
+								onclick={() => run(() => cancelBooking(booking._id))}
+								class="rounded-control border border-border px-3 py-1 text-sm"
+							>
+								{m.booking_cancel()}
+							</button>
+						{/if}
+					</li>
+				{:else}
+					<li class="text-faint" data-testid="my-bookings-past-empty">{m.bookings_past_none()}</li>
+				{/each}
+			</ul>
+		</div>
 	</section>
 </StudioGate>
