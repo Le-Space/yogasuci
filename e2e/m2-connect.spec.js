@@ -500,3 +500,41 @@ test.describe('a reply that arrives in a new tab', () => {
 		await stranger.close();
 	});
 });
+
+test.describe('what the connection screen offers before anything works', () => {
+	test('puts the relay within reach, and leaves it off', async ({ alice }) => {
+		// The relay was the last control inside "advanced", below a payload format
+		// nobody at a counter has an opinion about — three screens under the row
+		// that had just said this device reaches nobody from this network. The one
+		// remedy the screen offers should not be the hardest thing on it to find.
+		await openConnect(alice, 'alice');
+
+		// Reachable without opening anything. `openAdvanced` is deliberately not
+		// called: that is the whole assertion.
+		await expect(alice.getByTestId('use-relay')).toBeVisible({ timeout: 120_000 });
+
+		// And still off, which is the part that must not drift. A relay that
+		// arrived switched on would call somebody the first time the app starts.
+		await expect(alice.getByTestId('use-relay')).not.toBeChecked();
+	});
+
+	test('explains why a connection from afar can fail, without calling the code broken', async ({
+		alice
+	}) => {
+		await openConnect(alice, 'alice');
+
+		// What the badge says is a claim about *distance*, not about QR codes. A
+		// code scanned across a counter needs no internet and does not fail; the
+		// same code carried onto another network often does. Marking the whole
+		// mechanism experimental would tell a studio its everyday path is shaky,
+		// which is both untrue and the opposite of useful.
+		await expect(alice.getByTestId('reach-badge')).toBeVisible({ timeout: 120_000 });
+
+		await alice.getByTestId('reach-info').click();
+		await expect(alice.getByTestId('reach-modal')).toBeVisible();
+
+		// The explanation names the way out rather than only the problem.
+		await expect(alice.getByTestId('reach-modal')).toContainText(/Relay/i);
+		await expect(alice.getByTestId('reach-handbook')).toBeVisible();
+	});
+});

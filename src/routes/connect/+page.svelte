@@ -24,6 +24,7 @@
 	 */
 	import { onDestroy, onMount } from 'svelte';
 	import { base } from '$app/paths';
+	import Modal from '$lib/components/Modal.svelte';
 	import StudioGate from '$lib/components/StudioGate.svelte';
 	import {
 		connectedPeersStore,
@@ -92,6 +93,9 @@
 	 */
 	let shortCode = $state(false);
 	let relay = $state(false);
+	/** The "why does this fail" dialog, opened from the code card. */
+	let reachOpen = $state(false);
+
 	let relayAddressDraft = $state('');
 	let relayAddressBad = $state(false);
 
@@ -1007,6 +1011,73 @@
 	></qr-status>
 
 	<!--
+		The relay lives here, directly under the network verdict, and no longer at
+		the bottom of "advanced".
+
+		It was three screens down, below a payload format nobody at a counter has
+		an opinion about. That is the wrong place for the one remedy this screen
+		offers: the row above may have just said this device reaches nobody from
+		this network, and the answer to that should be within reach of the
+		sentence that raised it.
+
+		Deliberately *not* hidden when the relay is on, and neither is anything
+		about the code. Two reasons, both checked rather than assumed: the choice
+		only takes effect on the next start, so hiding the code path would leave
+		somebody who just ticked the box with no way to connect at all; and a
+		relay does not replace the handshake — `greetAndMaybeJoin` runs only from a
+		scanned or pasted payload, never for a peer discovery turned up, so a
+		first pairing still needs the code (#94).
+	-->
+	<!--
+		Off, and off means more than a default: without this the node has no
+		bootstrap list, announces no `/p2p-circuit`, and refuses to dial anything
+		that is not a QR session — checked in libp2p-config.spec.js rather than
+		promised in prose (#94).
+
+		The cost is in the hint rather than left to be discovered. A relay does
+		not see what two devices exchange; it does see that they want each other
+		and where they are. Whoever ticks this should know which of the two they
+		are agreeing to.
+	-->
+	<label class="mt-4 flex items-start gap-3 text-sm">
+		<input
+			type="checkbox"
+			data-testid="use-relay"
+			checked={relay}
+			onchange={(event) => chooseRelay(event.currentTarget.checked)}
+			class="mt-1 shrink-0"
+		/>
+		<span>
+			{m.connect_relay()}
+			<span class="mt-1 block text-xs text-muted">{m.connect_relay_hint()}</span>
+		</span>
+	</label>
+
+	{#if relay}
+		<!--
+			Only while the relay is on: an address field above a switch that is off
+			is a question nobody was asked.
+		-->
+		<label class="mt-3 block text-sm">
+			{m.connect_relay_address()}
+			<input
+				type="text"
+				data-testid="relay-address"
+				value={relayAddressDraft}
+				oninput={(event) => chooseRelayAddress(event.currentTarget.value)}
+				placeholder="/dns4/…/tcp/443/tls/ws/p2p/12D3KooW…"
+				class="mt-1 w-full rounded-control border p-2 font-mono text-xs"
+			/>
+			<span class="mt-1 block text-xs text-muted">{m.connect_relay_address_hint()}</span>
+			{#if relayAddressBad}
+				<span class="mt-1 block text-xs text-danger" data-testid="relay-address-invalid">
+					{m.connect_relay_address_invalid()}
+				</span>
+			{/if}
+		</label>
+	{/if}
+
+	<!--
 		A code that has done its job comes down.
 
 		It used to stay: the screen re-armed itself with the next invitation the
@@ -1055,6 +1126,36 @@
 					</h2>
 					<p class="mt-1 text-sm text-muted">
 						{step === 'replying' ? m.connect_reply_hint() : m.connect_ready_hint()}
+					</p>
+
+					<!--
+						What is marked, and what deliberately is not.
+
+						The badge says "connecting from afar is experimental" rather than
+						"QR codes are experimental", because those are different claims and
+						only one of them is true. A code scanned across a counter needs no
+						internet and does not fail; the same code carried to another network
+						often does, and that is what somebody should be warned about before
+						they rely on it.
+
+						Colour plus a word, not colour alone — a badge that only turns amber
+						says nothing to anybody who cannot see the difference.
+					-->
+					<p class="mt-2 flex flex-wrap items-center gap-2">
+						<span
+							class="rounded-control bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning"
+							data-testid="reach-badge"
+						>
+							{m.connect_reach_badge()}
+						</span>
+						<button
+							type="button"
+							data-testid="reach-info"
+							onclick={() => (reachOpen = true)}
+							class="text-xs underline"
+						>
+							{m.connect_reach_info()}
+						</button>
 					</p>
 				</div>
 				<button
@@ -1178,55 +1279,6 @@
 			</span>
 		</label>
 
-		<!--
-			Off, and off means more than a default: without this the node has no
-			bootstrap list, announces no `/p2p-circuit`, and refuses to dial anything
-			that is not a QR session — checked in libp2p-config.spec.js rather than
-			promised in prose (#94).
-
-			The cost is in the hint rather than left to be discovered. A relay does
-			not see what two devices exchange; it does see that they want each other
-			and where they are. Whoever ticks this should know which of the two they
-			are agreeing to.
-		-->
-		<label class="mt-4 flex items-start gap-3 text-sm">
-			<input
-				type="checkbox"
-				data-testid="use-relay"
-				checked={relay}
-				onchange={(event) => chooseRelay(event.currentTarget.checked)}
-				class="mt-1 shrink-0"
-			/>
-			<span>
-				{m.connect_relay()}
-				<span class="mt-1 block text-xs text-muted">{m.connect_relay_hint()}</span>
-			</span>
-		</label>
-
-		{#if relay}
-			<!--
-				Only while the relay is on: an address field above a switch that is off
-				is a question nobody was asked.
-			-->
-			<label class="mt-3 block text-sm">
-				{m.connect_relay_address()}
-				<input
-					type="text"
-					data-testid="relay-address"
-					value={relayAddressDraft}
-					oninput={(event) => chooseRelayAddress(event.currentTarget.value)}
-					placeholder="/dns4/…/tcp/443/tls/ws/p2p/12D3KooW…"
-					class="mt-1 w-full rounded-control border p-2 font-mono text-xs"
-				/>
-				<span class="mt-1 block text-xs text-muted">{m.connect_relay_address_hint()}</span>
-				{#if relayAddressBad}
-					<span class="mt-1 block text-xs text-danger" data-testid="relay-address-invalid">
-						{m.connect_relay_address_invalid()}
-					</span>
-				{/if}
-			</label>
-		{/if}
-
 		{#if payload}
 			<label class="mt-4 block text-sm text-muted" for="payload">{m.connect_copy()}</label>
 			<textarea
@@ -1288,3 +1340,24 @@
 		onclose={() => (scanning = false)}
 	></qr-scanner>
 </StudioGate>
+
+<!--
+	The explanation, one press from the badge rather than only in the handbook.
+
+	Short on purpose: the full account of NATs, hotel wifi and what a relay
+	discloses lives in the handbook, and duplicating it here would give two
+	versions to keep in step. What this owes the reader is the shape of the
+	problem and the way out, in the moment they hit it.
+-->
+<Modal bind:open={reachOpen} title={m.connect_reach_title()} testid="reach-modal">
+	<p class="text-sm">{m.connect_reach_same_room()}</p>
+	<p class="mt-3 text-sm">{m.connect_reach_remote()}</p>
+	<p class="mt-3 text-sm text-muted">{m.connect_reach_why()}</p>
+	<p class="mt-3 text-sm">{m.connect_reach_remedy()}</p>
+	<p class="mt-4 text-sm">
+		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+		<a href="{base}/handbuch/connecting" class="underline" data-testid="reach-handbook">
+			{m.connect_reach_more()}
+		</a>
+	</p>
+</Modal>

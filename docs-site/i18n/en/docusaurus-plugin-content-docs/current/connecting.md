@@ -106,6 +106,69 @@ without any trouble, and replies in the same format.
 If a connection does stay silent: switch it off, **Refresh the invitation**,
 connect again. Nothing is lost.
 
+## Why connecting from afar sometimes fails
+
+In the studio this never comes up: two devices on the same wifi always find each
+other. From afar it can fail, and the reason is not the app but the way the
+internet is built for domestic connections.
+
+**Almost nobody is directly reachable.** Your phone has no address anyone outside
+can call. In between sits a **NAT** — a device in the router or at the provider
+that bundles many connections behind one shared address. For two devices to reach
+each other anyway, the exchanged code carries an arrangement about who knocks
+where. That usually works.
+
+**Some networks do not allow it.** Mobile networks often use a NAT that opens a
+different door for every connection — which makes the arrangement worthless,
+because the address has already changed by the time the other side knocks. If
+**both** sides sit in such a network, no code in the world helps.
+
+**Hotel, guest and corporate wifi** are the second case. They often block
+everything except browsing, and additionally isolate guests from each other so
+that nobody can see anyone else's devices. That is exactly what this app needs.
+
+**And the browser has an opinion too.** Whether your device believes it is
+reachable depends partly on which browser you use. The same phone on the same
+wifi can reach different conclusions in two browsers. That is why the warning
+beside the share button is a statement about _this browser_, not about your
+network.
+
+### What you can do
+
+In order, easiest first:
+
+1. **Scan in the same room.** The QR code needs no internet, only the shared
+   network. This is the path the app is built for.
+2. **Switch to wifi** if one side is on mobile data. It is often enough for
+   _one_ of the two to be reachable.
+3. **Switch the relay on.** On the connection screen, directly under the network
+   panel. A server then introduces the two devices when nothing direct works.
+
+### What the relay is, and what it costs
+
+A relay is an intermediary. It does **not** replace the QR code — you still need
+that to connect for the first time. What it replaces is the direct path: when
+two devices cannot reach each other, the connection runs through the relay until
+the two find a direct route.
+
+The price fits in one sentence: the relay learns **that** two devices want each
+other, and **their IP addresses**. It does not learn what they exchange — that
+stays encrypted between the devices. This is why it is off until somebody turns
+it on, and why a device without that choice calls nobody.
+
+The choice takes effect the next time the app starts.
+
+### What we are working on
+
+The honest state: for "both sides behind mobile NAT" there is currently no
+solution that needs no outside help. The relay is the answer we have — it works,
+but it is an intermediary you have to switch on and give something away to. We
+are still looking for something better. Until then: scan in the studio, use the
+relay from afar.
+
+What an enabled relay discloses is set out in full in the
+[privacy section](/privacy).
+
 ## When it does not work
 
 **The QR code will not scan.** Turn up the screen brightness, 20–30 cm away, give
