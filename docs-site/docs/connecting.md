@@ -108,6 +108,69 @@ eines Geräts, das ihn anhat, und antwortet im selben Format.
 Wenn eine Verbindung damit still bleibt: Schalter aus, **Einladung erneuern**,
 neu verbinden. Verloren geht dabei nichts.
 
+## Warum eine Verbindung über die Ferne manchmal scheitert
+
+Im Studio ist das kein Thema: Zwei Geräte im selben WLAN finden sich immer. Über
+die Ferne kann es scheitern, und der Grund liegt nicht an der App, sondern daran,
+wie das Internet für Privatanschlüsse gebaut ist.
+
+**Fast niemand ist direkt erreichbar.** Euer Telefon hat keine Adresse, unter der
+es von außen angerufen werden kann. Dazwischen sitzt ein **NAT** — ein Gerät im
+Router oder beim Anbieter, das viele Anschlüsse hinter einer gemeinsamen Adresse
+bündelt. Damit zwei Geräte sich trotzdem direkt erreichen, verabreden sie über
+den ausgetauschten Code, wer wo anklopft. Das gelingt meistens.
+
+**Manche Netze lassen das nicht zu.** Mobilfunk arbeitet oft mit einem NAT, das
+für jede Verbindung einen anderen Zugang öffnet — dann ist die Verabredung
+wertlos, weil die Adresse schon nicht mehr stimmt, wenn die Gegenseite anklopft.
+Sitzen **beide** Seiten in solchen Netzen, hilft kein Code der Welt.
+
+**Hotel-, Gäste- und Firmen-WLAN** sind der zweite Fall. Sie sperren häufig alles
+außer dem Surfen und trennen die Gäste zusätzlich voneinander, damit niemand die
+Geräte der anderen sieht. Genau das braucht diese App aber.
+
+**Und der Browser urteilt mit.** Ob euer Gerät sich für erreichbar hält, hängt
+auch davon ab, welchen Browser ihr benutzt. Dasselbe Telefon im selben WLAN kann
+in zwei Browsern zu verschiedenen Schlüssen kommen. Deshalb ist die Warnung
+neben dem Teilen-Knopf eine Aussage über _diesen Browser_, nicht über euer Netz.
+
+### Was ihr dagegen tun könnt
+
+Der Reihe nach, vom Einfachsten:
+
+1. **Im selben Raum scannen.** Der QR-Code braucht kein Internet, nur das
+   gemeinsame Netz. Das ist der Weg, für den die App gebaut ist.
+2. **Ins WLAN wechseln**, wenn eine Seite im Mobilfunk hängt. Oft reicht es,
+   wenn _eine_ der beiden Seiten erreichbar ist.
+3. **Den Relay einschalten.** Auf dem Verbindungs-Schirm, gleich unter der
+   Netz-Anzeige. Dann vermittelt ein Server die Verbindung, wenn direkt nichts
+   geht.
+
+### Was der Relay ist, und was er kostet
+
+Ein Relay ist eine Vermittlungsstelle. Es ersetzt den QR-Code **nicht** — den
+braucht ihr weiterhin, um euch das erste Mal zu verbinden. Was es ersetzt, ist
+der direkte Weg: Erreichen sich zwei Geräte nicht, läuft die Verbindung über das
+Relay, bis die beiden einen direkten Pfad finden.
+
+Der Preis steht in einem Satz: Das Relay erfährt, **dass** zwei Geräte zueinander
+wollen, und **ihre IP-Adressen**. Es erfährt nicht, was sie austauschen — das
+bleibt zwischen den Geräten verschlüsselt. Deshalb ist es aus, bis jemand es
+einschaltet, und deshalb ruft ein Gerät ohne diese Wahl niemanden an.
+
+Die Wahl wirkt beim nächsten Start der App.
+
+### Woran wir arbeiten
+
+Der ehrliche Stand: Für den Fall „beide hinter Mobilfunk-NAT" gibt es derzeit
+keine Lösung, die ohne fremde Hilfe auskommt. Der Relay ist die Antwort darauf,
+die wir haben — funktionierend, aber eine Vermittlungsstelle, die man einschalten
+muss und der man etwas preisgibt. Wir suchen weiter nach etwas Besserem. Bis
+dahin gilt: Im Studio scannen, über die Ferne den Relay.
+
+Was ein eingeschalteter Relay preisgibt, steht vollständig im
+[Datenschutz-Abschnitt](/privacy).
+
 ## Wenn es nicht klappt
 
 **Der QR-Code lässt sich nicht scannen.** Displayhelligkeit hochdrehen, Abstand
