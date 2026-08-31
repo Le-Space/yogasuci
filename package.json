@@ -52,6 +52,14 @@
 		"vite-plugin-pwa": "^1.3.0",
 		"vitest": "^3.2.3"
 	},
+	"pnpm": {
+		"overrides": {
+			"@le-space/orbitdb-identity-provider-webauthn-did": "0.5.1"
+		},
+		"onlyBuiltDependencies": [
+			"esbuild"
+		]
+	},
 	"dependencies": {
 		"@chainsafe/libp2p-noise": "^17.0.0",
 		"@chainsafe/libp2p-yamux": "^8.0.1",
