@@ -16,7 +16,7 @@ packages:
   - docs-site
 
 overrides:
-  '@le-space/orbitdb-identity-provider-webauthn-did': 0.5.1
+  '@le-space/orbitdb-identity-provider-webauthn-did': 0.5.2
 
 onlyBuiltDependencies:
   - esbuild
