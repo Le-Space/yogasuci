@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@le-space/orbitdb-identity-provider-webauthn-did': 0.5.1
+  '@le-space/orbitdb-identity-provider-webauthn-did': 0.5.2
 
 importers:
 
@@ -30,8 +30,8 @@ importers:
         specifier: ^0.8.0
         version: 0.8.0(@multiformats/multiaddr@13.0.3)(libp2p@3.3.7)
       '@le-space/orbitdb-identity-provider-webauthn-did':
-        specifier: 0.5.1
-        version: 0.5.1(@orbitdb/core@4.0.0)
+        specifier: 0.5.2
+        version: 0.5.2(@orbitdb/core@4.0.0)
       '@libp2p/bootstrap':
         specifier: ^12.0.29
         version: 12.0.29
@@ -1922,8 +1922,8 @@ packages:
       '@multiformats/multiaddr': ^13.0.3
       libp2p: ^3.3.7
 
-  '@le-space/orbitdb-identity-provider-webauthn-did@0.5.1':
-    resolution: {integrity: sha512-Ek34oU6Rf3uCS29ZrFv0SsfsyZbHDPB2Y+9XJRxaL4V+G0OkmaA1OuSYQMKx/givLwou54CBhMKPb+M+lPnqwA==}
+  '@le-space/orbitdb-identity-provider-webauthn-did@0.5.2':
+    resolution: {integrity: sha512-4PBGwj8My6DZmnG2IRgNKDfQVMV/NTXrAI5dZY1NAAR/VNaPqZZ2PHL7E7pITtOeMAJZJ+fbq/lsPmzF56H0FQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       '@orbitdb/core': ^4.0.0
@@ -11616,13 +11616,13 @@ snapshots:
       uint8arraylist: 3.0.2
       uint8arrays: 6.1.1
 
-  '@le-space/orbitdb-identity-provider-webauthn-did@0.5.1(@orbitdb/core@4.0.0)':
+  '@le-space/orbitdb-identity-provider-webauthn-did@0.5.2(@orbitdb/core@4.0.0)':
     dependencies:
       '@ipld/dag-cbor': 10.0.1
       '@ipld/dag-ucan': 3.4.5
       '@le-space/ucanto-principal': 9.1.2
-      '@libp2p/crypto': 5.1.21
-      '@libp2p/logger': 6.2.11
+      '@libp2p/crypto': 5.1.23
+      '@libp2p/logger': 6.2.13
       '@orbitdb/core': 4.0.0
       '@simplewebauthn/browser': 13.3.0
       cbor-web: 9.0.2
@@ -12665,7 +12665,7 @@ snapshots:
     dependencies:
       serialize-javascript: 7.0.7
       smob: 1.6.2
-      terser: 5.49.0
+      terser: 5.51.2
     optionalDependencies:
       rollup: 4.62.3
 
@@ -16797,7 +16797,7 @@ snapshots:
   metro-minify-terser@0.84.4:
     dependencies:
       flow-enums-runtime: 0.0.6
-      terser: 5.49.0
+      terser: 5.51.2
 
   metro-resolver@0.84.4:
     dependencies:
