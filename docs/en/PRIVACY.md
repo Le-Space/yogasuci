@@ -171,12 +171,13 @@ Available countermeasure: `?ice=host` skips STUN and therefore the public addres
 
 ### 3.3 On the device
 
-| Datum                    | Where                                | Note                                                                                              |
-| ------------------------ | ------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| WebAuthn credential      | `localStorage`                       | holds the credential ID and public key, **not** the private key — that stays in the authenticator |
-| `userId` / `displayName` | in the passkey and the authenticator | chosen freely at registration; an email address here is a decision, not a requirement             |
-| database addresses       | `localStorage`                       | see §1b — whoever reads them can replicate                                                        |
-| blockstore / datastore   | IndexedDB                            | complete logs, unencrypted at rest                                                                |
+| Datum                    | Where                                     | Note                                                                                                                 |
+| ------------------------ | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| WebAuthn credential      | `localStorage`                            | holds the credential ID and public key, **not** the private key — that stays in the authenticator                    |
+| `userId` / `displayName` | in the passkey and the authenticator      | chosen freely at registration; an email address here is a decision, not a requirement                                |
+| database addresses       | `localStorage`                            | see §1b — whoever reads them can replicate                                                                           |
+| blockstore / datastore   | IndexedDB                                 | complete logs, unencrypted at rest                                                                                   |
+| OrbitDB signing key      | IndexedDB (`level-js-orbitdb/identities`) | unencrypted at rest; derived from the passkey's PRF, generated without PRF. Whoever reads it can sign as this device |
 
 **IndexedDB is not encrypted.** Anyone with physical access to an unlocked studio
 device reads every ledger of every student it has ever seen — no passkey, no
