@@ -176,12 +176,13 @@ gerade der Normalfall).
 
 ### 3.3 Auf dem Gerät
 
-| Datum                    | Ort                             | Hinweis                                                                                                        |
-| ------------------------ | ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| WebAuthn-Credential      | `localStorage`                  | enthält Credential-ID und Public Key, **nicht** den privaten Schlüssel — der bleibt im Plattform-Authenticator |
-| `userId` / `displayName` | im Passkey und im Authenticator | wird beim Anlegen frei gewählt; eine E-Mail-Adresse hier ist eine bewusste Entscheidung, keine Notwendigkeit   |
-| Datenbankadressen        | `localStorage`                  | siehe §1b — wer sie liest, kann replizieren                                                                    |
-| Blockstore / Datastore   | IndexedDB                       | vollständige Logs, unverschlüsselt at rest                                                                     |
+| Datum                    | Ort                                       | Hinweis                                                                                                                        |
+| ------------------------ | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| WebAuthn-Credential      | `localStorage`                            | enthält Credential-ID und Public Key, **nicht** den privaten Schlüssel — der bleibt im Plattform-Authenticator                 |
+| `userId` / `displayName` | im Passkey und im Authenticator           | wird beim Anlegen frei gewählt; eine E-Mail-Adresse hier ist eine bewusste Entscheidung, keine Notwendigkeit                   |
+| Datenbankadressen        | `localStorage`                            | siehe §1b — wer sie liest, kann replizieren                                                                                    |
+| Blockstore / Datastore   | IndexedDB                                 | vollständige Logs, unverschlüsselt at rest                                                                                     |
+| OrbitDB-Signierschlüssel | IndexedDB (`level-js-orbitdb/identities`) | unverschlüsselt at rest; aus dem PRF des Passkeys abgeleitet, ohne PRF erzeugt. Wer ihn liest, kann als dieses Gerät signieren |
 
 **IndexedDB ist unverschlüsselt.** Wer physischen Zugriff auf ein
 entsperrtes Studio-Gerät hat, liest alle Ledger aller je gesehenen Schüler —

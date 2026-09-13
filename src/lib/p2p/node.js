@@ -265,10 +265,15 @@ async function createOrbitDBInstance(helia, passkeyCredential) {
 			// and @orbitdb/core's createOrbitDB signature omits `identities`
 			// although the implementation accepts it. Recorded in docs/LIMITS.md.
 			/** @type {any} */ ({
-				webauthnCredential: passkeyCredential,
-				// One WebAuthn prompt per session: the signing key is encrypted at
-				// rest and unlocked once through the passkey.
-				encryptKeystore: true
+				// The DID is the passkey's P-256 key. Entries are signed by a
+				// secp256k1 key the provider derives from the passkey's PRF output
+				// (the keystore generates one without PRF), and that key is what the
+				// device registry records. It stays in OrbitDB's keystore,
+				// unencrypted in IndexedDB — docs/PRIVACY.md §3.3.
+				//
+				// No `encryptKeystore`: the provider reads it only together with
+				// `useKeystoreDID`, so on this path it encrypted nothing.
+				webauthnCredential: passkeyCredential
 			})
 		)
 	});

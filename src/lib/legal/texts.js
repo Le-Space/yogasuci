@@ -125,6 +125,7 @@ export const LEGAL = {
 				heading: 'Was auf Ihrem Gerät liegt',
 				paragraphs: [
 					'Passkey-Kennung und öffentlicher Schlüssel im lokalen Speicher des Browsers; der private Schlüssel bleibt im Authentifikator Ihres Geräts und ist für die Anwendung nicht lesbar.',
+					'Außerdem ein Signierschlüssel, mit dem die Anwendung Ihre Einträge unterschreibt. Er entsteht beim Einrichten, in der Regel aus Ihrem Passkey abgeleitet, und liegt — anders als der private Schlüssel des Passkeys — unverschlüsselt in IndexedDB.',
 					'Die Datenbanken selbst (Programm, Buchungen, Karten) liegen unverschlüsselt in IndexedDB. Wer physischen Zugriff auf ein entsperrtes Gerät hat, kann sie lesen — Sperrbildschirm und Geräteverschlüsselung sind hier wirksamer als alles, was die Anwendung tun könnte.'
 				]
 			},
@@ -216,6 +217,7 @@ export const LEGAL = {
 				heading: 'What is stored on your device',
 				paragraphs: [
 					'The passkey identifier and public key in the browser’s local storage; the private key stays in your device’s authenticator and cannot be read by the application.',
+					'Also a signing key the application signs your entries with. It is created during setup, usually derived from your passkey, and — unlike the passkey’s private key — sits unencrypted in IndexedDB.',
 					'The databases themselves (programme, bookings, passes) sit unencrypted in IndexedDB. Anyone with physical access to an unlocked device can read them — a lock screen and device encryption do more here than the application could.'
 				]
 			},
