@@ -84,17 +84,20 @@ device.
 ### What it is waiting on
 
 A module for this already exists:
-[`orbitdb-storacha-bridge`](https://github.com/NiKrause/orbitdb-storacha-bridge).
+[`orbitdb-storage-bridge`](https://github.com/NiKrause/orbitdb-storage-bridge).
 It takes an OrbitDB database apart into its blocks — log entries, manifest,
 identities, access control — uploads them individually, and on restore reassembles
 them so that the original identity is preserved. That last part is the hard one: a
 backup that loses the identity gives you a database whose older entries nobody can
 verify any more.
 
-The catch: the module uploads through **Storacha's** infrastructure, and Storacha
-no longer exists as a company. It has to be moved to a different provider before it
-can be used here. That is work at a known place rather than an open design question
-— but it is done when it is done, which is why no date is given.
+The catch was: the module uploaded through **Storacha's** infrastructure, and
+Storacha no longer exists as a company. The module has since moved on: from version
+0.7.0 (September 2026) it is called `orbitdb-storage-bridge` and backs up
+through interchangeable storage providers. Aleph and Pinata are connected; Pinata is
+tested against a real account, restore included. What remains is wiring it in here.
+That is work at a known place rather than an open design question — but it is done
+when it is done, which is why no date is given.
 
 ### What has to be thought through
 

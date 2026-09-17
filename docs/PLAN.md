@@ -465,7 +465,8 @@ Die alte Rechnung, die den Zuschnitt erzwungen hat:
    Bestände teilen sich dieselbe Mechanik — der Zuschnitt hat die Zahl der
    nötigen Mechanismen nicht erhöht.
 3. **Archivierung** abgeschlossener Perioden von Studio-Geräten via
-   `orbitdb-storacha-bridge` (Export als CAR/Storacha), lokal nur Verweis.
+   `orbitdb-storage-bridge` (Export als CAR zu einem austauschbaren
+   Speicher-Anbieter), lokal nur Verweis.
 4. **`occupancy`-Zähler** (3.3.1) hält Schülergeräte von der Kapazitätsfrage
    fern: ein Dokument pro Kurs und Termin in der ohnehin replizierten
    `program`-DB, statt einer Buchungs-DB, die sie sonst nur zum Zählen
