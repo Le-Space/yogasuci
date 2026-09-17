@@ -96,18 +96,21 @@ Totalverlust der Geräte übersteht.
 ### Woran es gerade hängt
 
 Ein Modul dafür ist bereits geschrieben:
-[`orbitdb-storacha-bridge`](https://github.com/NiKrause/orbitdb-storacha-bridge).
+[`orbitdb-storage-bridge`](https://github.com/NiKrause/orbitdb-storage-bridge).
 Es zerlegt eine OrbitDB-Datenbank in ihre Blöcke — Log-Einträge, Manifest,
 Identitäten, Zugriffsrechte — lädt sie einzeln hoch und setzt sie beim
 Wiederherstellen so zusammen, dass die ursprüngliche Identität erhalten bleibt.
 Genau das ist der schwierige Teil: Eine Sicherung, die die Identität verliert,
 ergibt eine Datenbank, deren alte Einträge niemand mehr prüfen kann.
 
-Der Haken: Das Modul lädt über die Infrastruktur von **Storacha** hoch, und
-Storacha existiert als Unternehmen nicht mehr. Es muss also auf einen anderen
-Anbieter umgestellt werden, bevor es hier zum Einsatz kommen kann. Das ist Arbeit
-an einer bekannten Stelle, kein offener Entwurf — aber es ist getan, wenn es getan
-ist, und deshalb steht hier kein Datum.
+Der Haken war: Das Modul lud über die Infrastruktur von **Storacha** hoch, und
+Storacha existiert als Unternehmen nicht mehr. Inzwischen ist das Modul
+umgestellt: Seit Version 0.7.0 (September 2026) heißt es
+`orbitdb-storage-bridge` und sichert über austauschbare Speicher-Anbieter.
+Angebunden sind Aleph und Pinata; Pinata ist gegen ein echtes Konto getestet,
+das Wiederherstellen eingeschlossen. Offen ist die Einbindung hier. Das ist Arbeit
+an einer bekannten Stelle, kein offener Entwurf — aber sie ist getan, wenn sie
+getan ist, und deshalb steht hier kein Datum.
 
 ### Was dabei bedacht werden muss
 
